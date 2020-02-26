@@ -1,0 +1,16 @@
+Datasource:
+    locations:
+        - D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq
+        - D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq2
+
+    search_method: # search_rawdata_summary
+        search_by: file_name #possible options: file_name and folder_name
+        search_deep_level_max: 0 # 0: root folder, 1:first sub-folder, etc.
+        # exclude the following sub-folders from the search
+        exclude_folders:
+
+        file_ext: # rawdata_summary_file_ext:  #must include dot (.) in-front of an extension
+            - .gz
+            - .fastq
+
+

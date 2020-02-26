@@ -1,0 +1,30 @@
+Location:
+    # location of a directory with inquiries
+    inquiries: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\inquiries
+    # path to the folder where new inquiry files are located
+    output_requests: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\outcome_requests
+    # path to the folder where application level log files are located (one per application run)
+    app_logs: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\logs
+    # path to the folder where dynamically created inquiry files for disqualified aliquots will be saved
+    inquiries_disqualified_relative_path: disqualified_for_reprocessing
+    # path to the folder where inquiry level log files are located (one log file per inquiry)
+    inquiry_logs_relative_path: logs
+
+    inquiries_processed_relative_path: processed
+
+
+Logging:
+    #main log - log created by the main application
+    #inquiry log - log created for each processed inquiry
+
+    #defines log levels to be used for "main" and "file" logs. Usual values are INFO and DEBUG
+    main_log_level: INFO
+    inquiry_log_level: INFO
+
+Email:
+    #default settings for sending emails
+    smtp_server: smtp.mssm.edu
+    smtp_server_port: 25
+    default_from_email: stasrirak.ms@gmail.com
+    sent_to_emails: stasrirak.ms@gmail.com, stasrira@yahoo.com
+    send_emails: True # expected values: True, False

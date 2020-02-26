@@ -1,0 +1,42 @@
+#dictionary etnries for assays (naming conversions)
+assay:
+    # expected values: "rna_seq", "scrna_seq", "atac_seq", "chip_seq", "scatac_seq", "medip_seq", "mint_chip", "wgbs",
+    # "snatac_seq", "snmc_seq", "cytof", "epic"
+    rnaseq: rnaseq
+    rna-seq: rnaseq
+    scrnaseq: scrnaseq
+    scrna-seq: scrnaseq
+    atacseq: atacseq
+    atac-seq: atacseq
+    scatacseq: scatacseq
+    scatac-seq: scatacseq
+    cytof: CyTOF
+    methylation: methylome
+    epic: methylome
+    methylome: methylome
+    "methylation_epic": methylome
+
+assay_sub_aliquot_postfix:
+    scrna_seq: _1
+    scatac_seq: _2
+    rna_seq: _3
+    atac_seq: _4
+    epic: _5
+    cytof: _6
+
+assay_exposures:
+    hiv: HIV
+    mrsa: MRSA
+    hlth: HLTH
+    anth: ANTH
+
+centers:
+    hi: HI
+    du: DU
+    pfm: PfM
+    ba: BA
+
+specimen_prep:
+    pbmc: PBMC
+    plasma: Plasma
+    paxgenes: PaxGenes
