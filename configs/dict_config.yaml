@@ -24,13 +24,13 @@ assay_sub_aliquot_postfix:
     epic: _5
     cytof: _6
 
-assay_exposures:
+exposure:
     hiv: HIV
     mrsa: MRSA
     hlth: HLTH
     anth: ANTH
 
-centers:
+center:
     hi: HI
     du: DU
     pfm: PfM
@@ -40,3 +40,9 @@ specimen_prep:
     pbmc: PBMC
     plasma: Plasma
     paxgenes: PaxGenes
+
+inquiry_file_structure:
+    1: exposure
+    2: center
+    3: specimen_prep
+    4: assay

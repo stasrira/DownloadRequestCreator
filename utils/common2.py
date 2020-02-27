@@ -42,12 +42,13 @@ def key_exists_in_dict(key, section):
         return False
 
 def replace_unacceptable_chars (val, bad_chars = None):
+    val_loc = str(val)
     if not bad_chars:
         bad_chars = ['/', ' ']
     # replace not allowed characters with "_"
     for ch in bad_chars:
-        val = val.replace(ch, '_')
+        val_loc = val_loc.replace(ch, '_')
     # remove repeating "_" symbols
-    while '__' in val:
-        val = val.replace('__', '_')
-    return val
+    while '__' in val_loc:
+        val_loc = val_loc.replace('__', '_')
+    return val_loc

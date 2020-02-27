@@ -35,29 +35,18 @@ class Inquiry(File):
         self.log_handler = None
         self.logger = self.setup_logger(self.wrkdir, self.filename)
         self.logger.info('Start working with Download Inquiry file {}'.format(filepath))
-
-        # self.file_dict = OrderedDict()
-        # self.rows = OrderedDict()
-
+        self.inq_match_arr = []
         self.columns_arr = []
-        # self.samples = []
-        # self.sub_aliquots = []
+
+        self.processed_folder = gc.INQUIRY_PROCESSED_DIR
+        # if a relative path provided, convert it to the absolute address based on the application working dir
+        if not os.path.isabs(self.processed_folder):
+            self.processed_folder = Path(self.wrkdir) / self.processed_folder
+        else:
+            self.processed_folder = Path(self.processed_folder)
+
         self.disqualified_sub_aliquots = {}
         self.disqualified_request_path = ''  # will store path to a inquiry file with disqualified sub-aliquots
-        # self.project = ''
-        # self.exposure = ''
-        # self.center = ''
-        # self.source_spec_type = ''
-        # self.assay = ''
-        # self.experiment_id = ''
-
-        # self.aliquots = None
-        # self.qualified_aliquots = None
-        # self.raw_data = None
-        # self.assay_data = None
-        # self.attachments = None
-        # self.submission_forms = None
-        # self.submission_package = None
         self.data_sources = None
 
         # self.sheet_name = ''
@@ -73,7 +62,6 @@ class Inquiry(File):
         # print('GO in for 1st time')
         self.get_file_content()
         # print('Out For First Time')
-        pass
 
     def get_file_content(self):
         # print('Inquiry get_file_content ---------')
@@ -362,9 +350,34 @@ class Inquiry(File):
 
         #  self.data_source_locations = self.conf_process_entity.get_value('Datasource/locations')
         self.data_sources = DataSource(self)
-        print('')
-        pass
+        self.match_inquiry_items_to_sources()
+        self.create_download_request_file()
 
+        """ # moved to match_inquiry_items_to_sources procedure
+        cur_row = 0
+        for inq_line in self.lines_arr:
+            if cur_row == self.header_row_num - 1:
+                cur_row += 1
+                continue
+            print (inq_line)
+            # concatenate study_id for the current inquiry line
+            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(i, 'inquiry_file_structure'))
+                                       for i in range(4)])
+            # print (inq_study_path)
+            sub_aliquot = inq_line[4]
+
+            for src_item in self.data_sources.source_content_arr:
+                if self.is_item_found_soft_match(sub_aliquot, src_item['name'], src_item['soft_comparisions']):  # sub_aliquot in src_item['name']:
+                    item_details = {
+                        'sub-aliquot': sub_aliquot,
+                        'study': inq_study_path,
+                        'source': src_item
+                    }
+                    self.inq_match_arr.append(item_details)
+        """
+
+
+        print('')
 
         """
         if self.data_sources and 'rawdata' in self.data_sources:
@@ -377,11 +390,12 @@ class Inquiry(File):
             self.attachments = Attachment(self)
 
         self.submission_package = SubmissionPackage(self)
-        """
+       
 
         self.create_request_for_disqualified_sub_aliquots()
 
         self.create_trasfer_script_file()
+         """
 
         # check for errors and put final log entry for the inquiry.
         if self.error.exist():
@@ -392,15 +406,79 @@ class Inquiry(File):
             _str = 'Processing of the current inquiry was finished successfully.\n'
             self.logger.info(_str)
 
+    def match_inquiry_items_to_sources(self):
+        cur_row = 0
+        for inq_line in self.lines_arr:
+            if cur_row == self.header_row_num - 1:
+                cur_row += 1
+                continue
+            print(inq_line)
+            # concatenate study_id for the current inquiry line
+            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(i, 'inquiry_file_structure'))
+                                       for i in range(4)])
+            # print (inq_study_path)
+            sub_aliquot = inq_line[4]
+
+            for src_item in self.data_sources.source_content_arr:
+                if self.is_item_found_soft_match(sub_aliquot, src_item['name'], src_item['soft_comparisions']):
+                    item_details = {
+                        'sub-aliquot': sub_aliquot,
+                        'study': inq_study_path,
+                        'source': src_item
+                    }
+                    self.inq_match_arr.append(item_details)
+
+    def is_item_found_soft_match(self, srch_item, srch_in_str, soft_match_arr):
+        # TODO: log if the match was direct or soft, report soft match with Warning status
+        out = False
+        if srch_item in srch_in_str:
+            out = True
+        else:
+            if soft_match_arr:
+                for item in soft_match_arr:
+                    srch_in_str = srch_in_str.replace(item['find'], item['replace'])
+                    srch_item = srch_item.replace(item['find'], item['replace'])
+                if srch_item in srch_in_str:
+                    out = True
+        return out
+
     def load_source_config(self):
         cfg_source = ConfigData(Path(self.wrkdir) / gc.CONFIG_FILE_SOURCE_NAME)
         return cfg_source
 
-    def load_center_conf(self, center):
-        cfg_assay = ConfigData(gc.CONFIG_FILE_CENTER)
-        return cfg_assay.get_value(center.upper())
+    def create_download_request_file(self):
+        self.logger.info("Start preparing download_request file.")
+        # path for the script file being created
+        rf_path = Path(gc.OUTPUT_REQUESTS_DIR + "/" + time.strftime("%Y%m%d_%H%M%S", time.localtime()) + '_' +
+                       self.filename.replace(' ', '') + '.tsv')
 
-    def create_trasfer_script_file(self):
+        with open(rf_path, "w") as rf:
+            # write headers to the file
+            headers = '\t'.join(['Source', 'Destination', 'Aliquot_id'])
+            rf.write(headers + '\n')
+
+            for item in self.inq_match_arr:
+                src_path = item['source']['path']
+
+                #prepare values for the current inquiry row to put into the outcome file
+                project_path = self.conf_process_entity.get_value('Destination/location/project_path')
+                study_path = item['study']
+                target_subfolder = item['source']['target_subfolder']
+                sub_aliquot = item['sub-aliquot']
+
+                # get template for the destination path and replace placeholders with values
+                # "{project_path}/{study_path}/{target_subfolder}"
+                dest_path = self.conf_process_entity.get_value('Destination/location/path_template')
+                dest_path = dest_path.replace('{project_path}', project_path)
+                dest_path = dest_path.replace('{study_path}', study_path)
+                dest_path = dest_path.replace('{target_subfolder}', target_subfolder)
+
+                line = '\t'.join([str(src_path), str(Path(dest_path)), str(sub_aliquot)])
+                rf.write(line +'\n')
+
+        self.logger.info("Finish preparing download_request file '{}'.".format(rf_path))
+
+    def create_trasfer_script_file_old(self):
         self.logger.info("Start preparing transfer_script.sh file.")
         # path for the script file being created
         sf_path = Path(self.submission_package.submission_dir + "/transfer_script.sh")

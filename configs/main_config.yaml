@@ -12,7 +12,6 @@ Location:
 
     inquiries_processed_relative_path: processed
 
-
 Logging:
     #main log - log created by the main application
     #inquiry log - log created for each processed inquiry

@@ -34,10 +34,11 @@ Datasource:
             - .gz
             - .fastq
         soft_comparision:
-            - {find: "-", replace: "_"}
-            - {find: "I", replace: "1"}
+            - {find: "_", replace: "~"}
+            - {find: "-", replace: "~"}
+            - {find: "B", replace: "F"}
 
 Destination:
     location:
-        path_template: "{project_path}/{study_path}/{target_subfolder}/{sub_aliquot_id}"
+        path_template: "{project_path}/{study_path}/{target_subfolder}" #/{sub_aliquot_id}
         project_path: D:\MounSinai\Darpa\Programming\submission\data_examples\Bulk_Drive\ECHO

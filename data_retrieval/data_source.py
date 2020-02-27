@@ -63,11 +63,3 @@ class DataSource(DataRetrieval):
                 self.source_content_arr.append(item_details)
 
         pass
-
-    """
-    def get_data_by_file_name(self, data_loc, search_deep_level, exclude_dirs, ext_match):
-        # it retrieves all files potentially qualifying to be a source and searches through each to match
-        # the sub-aliquot name in the name of the file
-        files = self.get_file_system_items(data_loc, search_deep_level, exclude_dirs, 'file', ext_match)
-        return files
-    """

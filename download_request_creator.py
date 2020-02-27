@@ -38,7 +38,7 @@ if __name__ == '__main__':
     gc.OUTPUT_REQUESTS_DIR = m_cfg.get_value('Location/output_requests')
 
     log_folder_name = gc.APP_LOG_DIR  # gc.LOG_FOLDER_NAME
-    processed_folder_name = gc.INQUIRY_PROCESSED_DIR  # gc.PROCESSED_FOLDER_NAME
+    #processed_folder_name = gc.INQUIRY_PROCESSED_DIR  # gc.PROCESSED_FOLDER_NAME
 
     prj_wrkdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                     # deactivate the current Inquiry logger
                     deactivate_logger_common(inq_obj.logger, inq_obj.log_handler)
 
-                    processed_dir = Path (processed_folder_name)  # Path(inquiries_path) / processed_folder_name  # 'Processed'
+                    processed_dir = inq_obj.processed_folder  # 'Processed'
                     # if Processed folder does not exist in the Inquiry source sub-folder, it will be created
                     os.makedirs(processed_dir, exist_ok=True)
 
