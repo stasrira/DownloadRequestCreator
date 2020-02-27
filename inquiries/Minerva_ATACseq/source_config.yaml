@@ -1,9 +1,30 @@
 Datasource:
     locations:
-        - D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq
-        - D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq2
+        -
+            # path to the source location
+            # path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq
+            path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq3_folders
+            # if provided, sub-folder will be created between the study's destination path and the aliquot folder
+            # containing downloaded files/folders, i.e. "fastqs" folder. See: Destination/location/path_template tag.
+            target_subfolder: Test11
+            # search_method is an optional parameter, if not given, search_method_default will be used
+            # this section describes search parameters that will be related to the current data source
+            # any of the values can be omitted
+            search_method: # search_rawdata_summary
+                search_by: folder_name # possible options: file_name and folder_name
+                search_deep_level_max: 1 # 0: root folder, 1:first sub-folder, etc.
+                # exclude the following sub-folders from the search
+                exclude_folders:
+                    - stas
+                    - fastq
+                file_ext: # rawdata_summary_file_ext:  #must include dot (.) in-front of an extension
+                    - .gz
+                    - .fastq
+        -
+            path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq2
 
-    search_method: # search_rawdata_summary
+
+    search_method_default: # search_rawdata_summary
         search_by: file_name #possible options: file_name and folder_name
         search_deep_level_max: 0 # 0: root folder, 1:first sub-folder, etc.
         # exclude the following sub-folders from the search
@@ -12,5 +33,11 @@ Datasource:
         file_ext: # rawdata_summary_file_ext:  #must include dot (.) in-front of an extension
             - .gz
             - .fastq
+        soft_comparision:
+            - {find: "-", replace: "_"}
+            - {find: "I", replace: "1"}
 
-
+Destination:
+    location:
+        path_template: "{project_path}/{study_path}/{target_subfolder}/{sub_aliquot_id}"
+        project_path: D:\MounSinai\Darpa\Programming\submission\data_examples\Bulk_Drive\ECHO

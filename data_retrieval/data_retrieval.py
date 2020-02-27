@@ -23,14 +23,7 @@ class DataRetrieval:
         # retrieves data for each sub-aliquot listed in the inquiry file based on presence
         # of aliquot id key in the name of the folder
         dirs = self.find_locations_by_folder(data_loc, search_deep_level, exclude_dirs)
-        # check if any of the found folders contain sub_aliquot ids and assign such folders to sub_aliqout ids
-        for d in dirs:
-            dbn = os.path.basename(d)
-            # print('dbn = |{}|'.format(dbn))
-            for sa, al in zip(self.inq_obj.sub_aliquots, self.inq_obj.aliquots):
-                # print ('Aliquot = |{}|'.format(sa))
-                if sa in dbn or al in dbn:
-                    self.get_data_for_aliquot(sa, d)
+        return dirs
 
     def get_data_by_file_name(self, data_loc, search_deep_level, exclude_dirs, ext_match):
         # it retrieves all files potentially qualifying to be a source and searches through each to match
@@ -65,7 +58,7 @@ class DataRetrieval:
             if not dirs:
                 dirs = []
             dirs = list(set(dirs) - set(exclude_dirs))  # remove folders to be excluded from the list of directories
-            dirs_path = [str(Path(path / dr)) for dr in dirs]
+            dirs_path = [str(Path(path + '/' + dr)) for dr in dirs]
         else:
             self.logger.warning('Expected to exist directory "{}" is not present - reported from "DataRetrieval" '
                                 'class, "get_top_level_dirs" function'.format (path))
