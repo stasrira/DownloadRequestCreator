@@ -6,8 +6,9 @@ Datasource:
             path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq3_folders
             # if provided, sub-folder will be created between the study's destination path and the aliquot folder
             # containing downloaded files/folders, i.e. "fastqs" folder. See: Destination/location/path_template tag.
-            target_subfolder: Test11
-            # search_method is an optional parameter, if not given, search_method_default will be used
+            target_subfolder:
+            # search_method is an optional parameter under Datasource/locations section,
+            # if not given, search_method_default will be used instead
             # this section describes search parameters that will be related to the current data source
             # any of the values can be omitted
             search_method: # search_rawdata_summary
@@ -23,7 +24,6 @@ Datasource:
         -
             path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq2
 
-
     search_method_default: # search_rawdata_summary
         search_by: file_name #possible options: file_name and folder_name
         search_deep_level_max: 0 # 0: root folder, 1:first sub-folder, etc.
@@ -33,10 +33,16 @@ Datasource:
         file_ext: # rawdata_summary_file_ext:  #must include dot (.) in-front of an extension
             - .gz
             - .fastq
+        # if soft match is set and no exact match was found,
+        # "find" character will be replaced with "replace" character in inquiry and source values
+        # and comparision will be repeated
         soft_comparision:
             - {find: "_", replace: "~"}
             - {find: "-", replace: "~"}
             - {find: "B", replace: "F"}
+
+        # if aliquot_match set to true, additional match by aliquot id will be performed if sub-aliquot match fails
+        aliquot_match: True
 
 Destination:
     location:

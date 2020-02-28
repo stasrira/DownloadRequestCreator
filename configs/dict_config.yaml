@@ -17,11 +17,11 @@ assay:
     "methylation_epic": methylome
 
 assay_sub_aliquot_postfix:
-    scrna_seq: _1
-    scatac_seq: _2
-    rna_seq: _3
-    atac_seq: _4
-    epic: _5
+    scrnaseq: _1
+    scatacseq: _2
+    rnaseq: _3
+    atacseq: _4
+    methylome: _5
     cytof: _6
 
 exposure:

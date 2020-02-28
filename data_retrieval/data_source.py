@@ -25,7 +25,9 @@ class DataSource(DataRetrieval):
             'Datasource/search_method_default/search_deep_level_max')
         exclude_dirs_defalult = self.conf_process_entity.get_value('Datasource/search_method_default/exclude_folders')
         ext_match_defalult = self.conf_process_entity.get_value('Datasource/search_method_default/file_ext')
-        soft_comparisions_default = self.conf_process_entity.get_value('Datasource/search_method_default/soft_comparision')
+        soft_comparisions_default = self.conf_process_entity.get_value(
+            'Datasource/search_method_default/soft_comparision')
+        aliquot_match_default = self.conf_process_entity.get_value('Datasource/search_method_default/aliquot_match')
 
         for loc_item in source_locations:
             # check if a current source has specific search_by parameters, otherwise use default ones
@@ -40,6 +42,9 @@ class DataSource(DataRetrieval):
                 if src_sm and 'file_ext' in src_sm.keys() else ext_match_defalult
             soft_comparisions = src_sm['soft_comparision'] \
                 if src_sm and 'soft_comparision' in src_sm.keys() else soft_comparisions_default
+            aliquot_match = src_sm['aliquot_match'] \
+                if src_sm and 'aliquot_match' in src_sm.keys() else aliquot_match_default
+
 
             # start processing a source
             items = []
@@ -58,8 +63,11 @@ class DataSource(DataRetrieval):
                 target_subfolder = loc_item['target_subfolder'] if loc_item['target_subfolder'] else ''
 
             for item in items:
-                item_details = {'path': item, 'name': os.path.basename(item), 'target_subfolder': target_subfolder,
-                                'soft_comparisions': soft_comparisions}
+                item_details = {'path': item,
+                                'name': os.path.basename(item),
+                                'target_subfolder': target_subfolder,
+                                'soft_comparisions': soft_comparisions,
+                                'aliquot_match': aliquot_match}
                 self.source_content_arr.append(item_details)
 
         pass

@@ -114,4 +114,4 @@ venv.bak/
 /inquiries/Minerva_ATACseq/logs
 /inquiries/Minerva_RNAseq/logs
 *processed/
-
+*reprocess/

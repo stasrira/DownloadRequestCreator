@@ -36,6 +36,8 @@ if __name__ == '__main__':
     gc.INQUIRY_PROCESSED_DIR = m_cfg.get_value('Location/inquiries_processed_relative_path')
     # path to the folder where created submission packages will be located. One package sub_folder per inquiry.
     gc.OUTPUT_REQUESTS_DIR = m_cfg.get_value('Location/output_requests')
+    # path to dir with dynamically created inquiry files for disqualified aliquots
+    gc.DISQUALIFIED_INQUIRIES =  m_cfg.get_value('Location/inquiries_disqualified_path')
 
     log_folder_name = gc.APP_LOG_DIR  # gc.LOG_FOLDER_NAME
     #processed_folder_name = gc.INQUIRY_PROCESSED_DIR  # gc.PROCESSED_FOLDER_NAME
@@ -107,7 +109,7 @@ if __name__ == '__main__':
 
                     # identify if any errors were identified and set status variable accordingly
                     if not inq_obj.error.exist():
-                        if not inq_obj.disqualified_sub_aliquots:
+                        if not inq_obj.disqualified_items:
                             # no disqualified sub-aliquots present
                             fl_status = 'OK'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
@@ -168,9 +170,9 @@ if __name__ == '__main__':
                                    inq_obj.attachments.data_loc,
                                    inq_obj.qualified_aliquots
                                                             if inq_obj.qualified_aliquots else 'None',
-                                   [val for val in inq_obj.disqualified_sub_aliquots.keys()]
-                                                            if inq_obj.disqualified_sub_aliquots else 'None',
-                                   inq_obj.disqualified_request_path,
+                                   [val for val in inq_obj.disqualified_items.keys()]
+                                                            if inq_obj.disqualified_items else 'None',
+                                   inq_obj.disqualified_inquiry_path,
                                    str(Path(inq_obj.submission_package.submission_dir) / 'transfer_script.sh')
                                    )
                          )

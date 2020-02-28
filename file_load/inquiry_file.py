@@ -45,8 +45,9 @@ class Inquiry(File):
         else:
             self.processed_folder = Path(self.processed_folder)
 
-        self.disqualified_sub_aliquots = {}
-        self.disqualified_request_path = ''  # will store path to a inquiry file with disqualified sub-aliquots
+        self.disqualified_items = {}
+        self.disqualified_inquiry_path = ''  # will store path to a inquiry file with disqualified sub-aliquots
+
         self.data_sources = None
 
         # self.sheet_name = ''
@@ -352,6 +353,7 @@ class Inquiry(File):
         self.data_sources = DataSource(self)
         self.match_inquiry_items_to_sources()
         self.create_download_request_file()
+        self.create_inquiry_file_for_disqualified_entries()
 
         """ # moved to match_inquiry_items_to_sources procedure
         cur_row = 0
@@ -412,25 +414,51 @@ class Inquiry(File):
             if cur_row == self.header_row_num - 1:
                 cur_row += 1
                 continue
-            print(inq_line)
+            # print(inq_line)
             # concatenate study_id for the current inquiry line
             inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(i, 'inquiry_file_structure'))
                                        for i in range(4)])
             # print (inq_study_path)
-            sub_aliquot = inq_line[4]
+            assay = inq_line[3]  # identify assay for the current inquiry line
+            sub_al = inq_line[4]  # identify sub-aliquot for the current inquiry line
 
+            # identify aliquot for the given sub-aliquot
+            al = cm2.convert_sub_aliq_to_aliquot(sub_al, assay) # identify aliquot for the current inquiry line
+
+            match = False
             for src_item in self.data_sources.source_content_arr:
-                if self.is_item_found_soft_match(sub_aliquot, src_item['name'], src_item['soft_comparisions']):
+                match = False
+                # attempt match by the sub-aliquot
+                if self.is_item_found_soft_match(sub_al, src_item['name'], src_item['soft_comparisions'], sub_al):
+                    match = True
+                # if sub-aliquot match was not success, attempt to match by the aliquot
+                elif src_item['aliquot_match']:
+                    if self.is_item_found_soft_match(al, src_item['name'], src_item['soft_comparisions'], sub_al):
+                        match = True
+                # if a match was found using one of the above methods, record the item to inq_match_arr
+                if match:
                     item_details = {
-                        'sub-aliquot': sub_aliquot,
+                        'sub-aliquot': sub_al,
                         'study': inq_study_path,
                         'source': src_item
                     }
                     self.inq_match_arr.append(item_details)
 
-    def is_item_found_soft_match(self, srch_item, srch_in_str, soft_match_arr):
-        # TODO: log if the match was direct or soft, report soft match with Warning status
+            if not match:
+                self.disqualify_inquiry_item(sub_al, 'No match found in the data source.', inq_line)
+
+
+
+    def is_item_found_soft_match(self, srch_item, srch_in_str, soft_match_arr, item_to_be_reported):
         out = False
+
+        # identify if the search is performed for sub_aliquot (full value) or aliquot (partial value)
+        if srch_item == item_to_be_reported:
+            entity = 'sub-aliquot'
+        else:
+            entity = 'aliquot'
+
+        soft_match = False
         if srch_item in srch_in_str:
             out = True
         else:
@@ -440,6 +468,26 @@ class Inquiry(File):
                     srch_item = srch_item.replace(item['find'], item['replace'])
                 if srch_item in srch_in_str:
                     out = True
+                    soft_match = True
+        # prepare log entry
+        if out:
+            _str = str('Soft' if soft_match else 'Exact') + \
+                   ' match was ' + \
+                   'found for {} item "{}". Match values are as following: "{}" and "{}".'\
+                       .format(entity, item_to_be_reported, srch_item, srch_in_str)
+
+        # log outcome of the match process, the "soft" match will logged as warning
+        if out:
+            if entity == 'aliquot':
+                # if match was found by aliquot (partial id value), always report it as "warning"
+                self.logger.warning(_str)
+            else:
+                # proceed here if match was found by sub-aliquot (full id value)
+                if soft_match:
+                    self.logger.warning(_str)
+                else:
+                    self.logger.info(_str)
+
         return out
 
     def load_source_config(self):
@@ -478,86 +526,70 @@ class Inquiry(File):
 
         self.logger.info("Finish preparing download_request file '{}'.".format(rf_path))
 
-    def create_trasfer_script_file_old(self):
-        self.logger.info("Start preparing transfer_script.sh file.")
-        # path for the script file being created
-        sf_path = Path(self.submission_package.submission_dir + "/transfer_script.sh")
+    def disqualify_inquiry_item(self, sa, disqualify_status, inquiry_item):
+        # adds a sub aliquots to the dictionary of disqualified items
+        # key = sub-aliquot, values: dictionary with 2 values:
+        #       'status' - reason for disqualification
+        #       'inquiry_item: array of values for inquiry row from an inquiry file
+        details = {'status': disqualify_status, 'inquiry_item':inquiry_item}
+        self.disqualified_items[sa]= details
+        self.logger.warning('Sub-aliquot "{}" was disqualified with the following status: "{}"'
+                            .format(sa, disqualify_status))
 
-        #get script file template
-        with open('scripts/transfer_script.sh', 'r') as ft:
-            scr_tmpl = ft.read()
+    def create_inquiry_file_for_disqualified_entries(self):
+        if self.disqualified_items:
+            self.logger.info("Start preparing inquiry file for disqualified sub-aliquots.")
+            # path for the script file being created
 
-        #update placeholders in the script with the actual values
-        scr_tmpl = scr_tmpl.replace("{!smtp!}", self.conf_main.get_value("Email/smtp_server") + ":"
-                                    + str(self.conf_main.get_value("Email/smtp_server_port")))
-        scr_tmpl = scr_tmpl.replace("{!to_email!}", self.conf_main.get_value("Email/sent_to_emails"))
-        scr_tmpl = scr_tmpl.replace("{!from_email!}", self.conf_main.get_value("Email/default_from_email"))
-        scr_tmpl = scr_tmpl.replace("{!send_email_flag!}", str(self.conf_main.get_value("Email/send_emails")))
-        scr_tmpl = scr_tmpl.replace("{!source_dir!}", self.submission_package.submission_dir)
-        scr_tmpl = scr_tmpl.replace("{!target_dir!}", self.conf_main.get_value("DataTransfer/remote_target_dir"))
-        scr_tmpl = scr_tmpl.replace("{!ssh_user!}", self.conf_main.get_value("DataTransfer/ssh_user"))
+            wb = xlwt.Workbook()  # create empty workbook object
+            sh = wb.add_sheet('Re-process_inquiry')  # sheet name can not be longer than 32 characters
 
-        set_permissions = False
-        set_perm_value = self.conf_main.get_value("DataTransfer/exec_permis")
-        if set_perm_value:
-            try:
-                exec_permission = eval(set_perm_value.strip())
-                set_permissions = True
-            except Exception as ex:
-                _str = 'Unexpected error Error "{}" occurred during evaluating of "DataTransfer/exec_permis" value ' \
-                       '"{}" retrieved from the main config file. Permission setup operation will be skipped. \n{} '\
-                    .format(ex, set_perm_value, traceback.format_exc())
-                self.logger.warning(_str)
-                # self.error.add_error(_str)
-                set_permissions = False
+            cur_row = 0  # first row for 0-based array
+            cur_col = 0  # first col for 0-based array
+            # write headers to the file
+            headers = self.lines_arr[0]
+            for val in headers:
+                sh.write(cur_row, cur_col, val)
+                cur_col += 1
 
-        with open(sf_path, "w") as sf:
-            sf.write(scr_tmpl)
+            cur_row += 1
 
-        if set_permissions:
-            try:
-                # if permissions to be set were retrieved from config file, set them here
-                st = os.stat(sf_path)
-                os.chmod(sf_path, st.st_mode | exec_permission) #stat.S_IXUSR
-            except Exception as ex:
-                _str = 'Unexpected error Error "{}" occurred during setting up permissions "{}" for the script file ' \
-                       '"{}". \n{} '\
-                    .format(ex, set_perm_value, sf_path, traceback.format_exc())
-                self.logger.warning(_str)
-                self.error.add_error(_str)
-        else:
-            _str = 'Permission setup was skipped for the transfer script file. ' \
-                   'Note: value of "DataTransfer/exec_permis" from main config was set to "{}".'\
-                                    .format(set_perm_value)
-            self.logger.warning(_str)
+            for di in self.disqualified_items:
+                fields = self.disqualified_items[di]['inquiry_item']
+                cur_col = 0
+                for val in fields:
+                    sh.write(cur_row, cur_col, val)
+                    cur_col += 1
+                cur_row += 1
 
-        self.logger.info("Finish preparing '{}' file.".format(sf_path))
+            if not os.path.isabs(gc.DISQUALIFIED_INQUIRIES):
+                disq_dir = Path(self.wrkdir) / gc.DISQUALIFIED_INQUIRIES
+            else:
+                disq_dir = Path(gc.DISQUALIFIED_INQUIRIES)
 
-    def disqualify_sub_aliquot(self, sa, details):
-        # adds a sub aliquots to the disctionary of disqualified sub_aliquots
-        # key = sub-aliquot, value = array of details for disqualification; 1 entry can have multiple detail reasons
-        if sa in self.disqualified_sub_aliquots.keys():
-            self.disqualified_sub_aliquots[sa].append(details)
-        else:
-            arr_details = [details]
-            self.disqualified_sub_aliquots[sa]= arr_details
-        self.logger.warning('Sub-aliquot "{}" was disqualified with the following details: "{}"'.format(sa, details))
+            # if DISQUALIFIED_INQUIRIES folder does not exist, it will be created
+            os.makedirs(disq_dir, exist_ok=True)
 
-    def populate_qualified_aliquots(self):
-        # reset self.qualified_aliquots array
-        self.qualified_aliquots = []
-        #select only aliquots that were not disqualified
-        for sa, a in zip(self.sub_aliquots, self.aliquots):
-            if not sa in self.disqualified_sub_aliquots.keys():
-                self.qualified_aliquots.append(a)
+            # identify path for the disqualified inquiry file
+            self.disqualified_inquiry_path = Path(str(disq_dir) + '/' +
+                                                  time.strftime("%Y%m%d_%H%M%S", time.localtime()) +
+                                                  '_reprocess_disqualified_' +
+                                                # .stem method is used to get file name without an extension
+                                                  Path(self.filename).stem.replace(' ', '') + '.xls')
+
+            wb.save(str(self.disqualified_inquiry_path))
+
+            self.logger.info("Successfully prepared the inquiry file for disqualified sub-aliquots and saved in '{}'."
+                             .format(str(self.disqualified_inquiry_path)))
+
 
     def create_request_for_disqualified_sub_aliquots(self):
 
         # proceed only if some disqualified sub-aliquots are present
-        if self.disqualified_sub_aliquots:
+        if self.disqualified_items:
 
             self.logger.info("Start preparing a inquiry file for disqualified sub-aliquots '{}'."
-                             .format([val for val in self.disqualified_sub_aliquots.keys()]))
+                             .format([val for val in self.disqualified_items.keys()]))
 
             wb = xlwt.Workbook()  # create empty workbook object
             sh = wb.add_sheet('Submission_Request')  # sheet name can not be longer than 32 characters
@@ -573,7 +605,7 @@ class Inquiry(File):
             cur_row += 1
 
             for sa, s in zip (self.sub_aliquots, self.samples):
-                if sa in self.disqualified_sub_aliquots.keys():
+                if sa in self.disqualified_items.keys():
                     sh.write(cur_row, 0, self.exposure)
                     sh.write(cur_row, 1, self.center)
                     sh.write(cur_row, 2, self.source_spec_type)
@@ -582,14 +614,14 @@ class Inquiry(File):
                     sh.write(cur_row, 5, s)
                     cur_row += 1
 
-            self.disqualified_request_path = Path(gc.DISQUALIFIED_INQUIRIES + '/' +
+            self.disqualified_inquiry_path = Path(gc.DISQUALIFIED_INQUIRIES + '/' +
                                                   time.strftime("%Y%m%d_%H%M%S", time.localtime()) + '_reprocess_disqualified _' +
                                                   Path(self.filename).stem + '.xls')
 
             # if DISQUALIFIED_INQUIRIES folder does not exist, it will be created
             os.makedirs(gc.DISQUALIFIED_INQUIRIES, exist_ok=True)
 
-            wb.save(str(self.disqualified_request_path))
+            wb.save(str(self.disqualified_inquiry_path))
 
             self.logger.info("Successfully prepared the inquiry file for disqualified sub-aliquots and saved in '{}'."
-                             .format(str(self.disqualified_request_path)))
+                             .format(str(self.disqualified_inquiry_path)))

@@ -6,10 +6,10 @@ Location:
     # path to the folder where application level log files are located (one per application run)
     app_logs: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\logs
     # path to the folder where dynamically created inquiry files for disqualified aliquots will be saved
-    inquiries_disqualified_relative_path: disqualified_for_reprocessing
+    inquiries_disqualified_path: reprocess
     # path to the folder where inquiry level log files are located (one log file per inquiry)
     inquiry_logs_relative_path: logs
-
+    # path to the folder where processed inquiry files will be stored
     inquiries_processed_relative_path: processed
 
 Logging:

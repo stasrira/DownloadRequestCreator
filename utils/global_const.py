@@ -20,7 +20,7 @@ APP_LOG_DIR = ''  # path to the folder where all application level log files wil
 INQUIRY_LOG_DIR = ''  # path to the folder where all log files for processing inquiry files will be stored
                           # (one file per inquiry)
 INQUIRY_PROCESSED_DIR = ''  # path to the folder where all processed (and renamed) inquiries will be stored
-DISQUALIFIED_INQUIRIES = '' # path to dir where will be saved dynamically created inquiry files for disqualified aliquots
+DISQUALIFIED_INQUIRIES = '' # path to dir with dynamically created inquiry files for disqualified aliquots
 OUTPUT_REQUESTS_DIR = ''  # path to the folder where all processed (and renamed) inquiries will be stored
 
 # the following 3 lines are to be removed
