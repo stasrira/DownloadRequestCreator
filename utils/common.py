@@ -34,3 +34,19 @@ def identify_delimeter_by_file_extension(file_path):
         out_value = ','
 
     return  out_value
+
+def start_external_process_async (exec_path):
+    from subprocess import Popen
+    process = Popen(exec_path)
+    return process
+
+def check_external_process(process):
+    pr_out = process.poll()
+    if pr_out is None:
+        status = 'running'
+        message = ''
+    else:
+        status = 'stopped'
+        message = pr_out
+    out = {'status': status, 'message': message}
+    return out

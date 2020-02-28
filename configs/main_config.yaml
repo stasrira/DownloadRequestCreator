@@ -11,6 +11,8 @@ Location:
     inquiry_logs_relative_path: logs
     # path to the folder where processed inquiry files will be stored
     inquiries_processed_relative_path: processed
+    # path to Data Downloader tool. It will be executed by the app, if "Execute/run_data_downloader" is set to True
+    data_downloader_path: notepad.exe
 
 Logging:
     #main log - log created by the main application
@@ -27,3 +29,8 @@ Email:
     default_from_email: stasrirak.ms@gmail.com
     sent_to_emails: stasrirak.ms@gmail.com, stasrira@yahoo.com
     send_emails: True # expected values: True, False
+
+Execute:
+    # if set to true, data downloader file (Location/data_downloader_path) will be executed upon completion
+    # of processing inquiries
+    run_data_downloader: True

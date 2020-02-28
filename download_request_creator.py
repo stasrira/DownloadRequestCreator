@@ -4,7 +4,7 @@ import os
 from os import walk
 import time
 import traceback
-from utils import setup_logger_common, deactivate_logger_common
+from utils import setup_logger_common, deactivate_logger_common, common as cm
 from utils import ConfigData
 from utils import global_const as gc
 from utils import send_email as email
@@ -40,7 +40,11 @@ if __name__ == '__main__':
     gc.DISQUALIFIED_INQUIRIES =  m_cfg.get_value('Location/inquiries_disqualified_path')
 
     log_folder_name = gc.APP_LOG_DIR  # gc.LOG_FOLDER_NAME
-    #processed_folder_name = gc.INQUIRY_PROCESSED_DIR  # gc.PROCESSED_FOLDER_NAME
+
+    # this variable define if Data Downloader app will be executed at the end of processing inquiries
+    run_data_download = m_cfg.get_value('Execute/run_data_downloader')
+    # path to the Data Downloader tool
+    gc.DATA_DOWNLOADER_PATH = m_cfg.get_value('Location/data_downloader_path')
 
     prj_wrkdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -147,6 +151,7 @@ if __name__ == '__main__':
                     # TODO: add to body info about location of submission package per inquiry, list of aliquots(?)
                     #  and corresponded bulk drive attachment path
                     # preps for email notification
+                    """
                     email_msgs.append(
                         ('Experiment: {}.'
                          '<br/> Inquiry file <br/>{} <br/> was processed and moved/renamed to <br/> {}.'
@@ -176,7 +181,9 @@ if __name__ == '__main__':
                                    str(Path(inq_obj.submission_package.submission_dir) / 'transfer_script.sh')
                                    )
                          )
+                         
                     )
+                    """
                     # email_attchms.append(inq_obj.log_handler.baseFilename)
 
                     # print ('email_msgs = {}'.format(email_msgs))
@@ -190,6 +197,14 @@ if __name__ == '__main__':
                     raise
 
         mlog.info('Number of successfully processed Submission inquiries = {}'.format(inq_proc_cnt))
+
+        # start Data Download request if proper config setting was provided
+        if run_data_download:
+            # start process
+            dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
+            # check if it is running
+            dd_status = cm.check_external_process(dd_process)
+
         # TODO: populate email subject with appropriate info
         email_subject = ''
 

@@ -2,7 +2,7 @@
 # main config file name
 CONFIG_FILE_MAIN = 'configs/main_config.yaml'
 CONFIG_FILE_DICTIONARY = 'configs/dict_config.yaml'
-CONFIG_FILE_SOURCE_NAME = 'source_config.yaml'
+CONFIG_FILE_SOURCE_NAME = 'configs/source_config.yaml'
 
 # PROJECT_NAME = 'ECHO'  # this key is stored in here instead of being passed from a inquiry.
 
@@ -22,6 +22,8 @@ INQUIRY_LOG_DIR = ''  # path to the folder where all log files for processing in
 INQUIRY_PROCESSED_DIR = ''  # path to the folder where all processed (and renamed) inquiries will be stored
 DISQUALIFIED_INQUIRIES = '' # path to dir with dynamically created inquiry files for disqualified aliquots
 OUTPUT_REQUESTS_DIR = ''  # path to the folder where all processed (and renamed) inquiries will be stored
+
+DATA_DOWNLOADER_PATH = '' # path to the location of Data Downloader app, set based on the main config value
 
 # the following 3 lines are to be removed
 # SUBMISSION_PACKAGES_DIR = "submission_packages"
