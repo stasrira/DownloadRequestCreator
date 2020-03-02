@@ -45,6 +45,8 @@ class Inquiry(File):
         else:
             self.processed_folder = Path(self.processed_folder)
 
+        self.download_request_path = None
+
         self.disqualified_items = {}
         self.disqualified_inquiry_path = ''  # will store path to a inquiry file with disqualified sub-aliquots
 
@@ -355,50 +357,6 @@ class Inquiry(File):
         self.create_download_request_file()
         self.create_inquiry_file_for_disqualified_entries()
 
-        """ # moved to match_inquiry_items_to_sources procedure
-        cur_row = 0
-        for inq_line in self.lines_arr:
-            if cur_row == self.header_row_num - 1:
-                cur_row += 1
-                continue
-            print (inq_line)
-            # concatenate study_id for the current inquiry line
-            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(i, 'inquiry_file_structure'))
-                                       for i in range(4)])
-            # print (inq_study_path)
-            sub_aliquot = inq_line[4]
-
-            for src_item in self.data_sources.source_content_arr:
-                if self.is_item_found_soft_match(sub_aliquot, src_item['name'], src_item['soft_comparisions']):  # sub_aliquot in src_item['name']:
-                    item_details = {
-                        'sub-aliquot': sub_aliquot,
-                        'study': inq_study_path,
-                        'source': src_item
-                    }
-                    self.inq_match_arr.append(item_details)
-        """
-
-
-        print('')
-
-        """
-        if self.data_sources and 'rawdata' in self.data_sources:
-            self.raw_data = DataSource(self, 'rawdata', 'Raw Data')  # RawData(self)
-        if self.data_sources and 'assaydata' in self.data_sources:
-            self.assay_data = DataSource(self, 'assaydata', 'Assay Data')  # RawData(self)
-        if self.data_sources and 'metadata_db' in self.data_sources:
-            self.metadata_db = DataSourceDB(self, 'metadata_db', 'Metadata DB')
-        if self.data_sources and 'attachment' in self.data_sources:
-            self.attachments = Attachment(self)
-
-        self.submission_package = SubmissionPackage(self)
-       
-
-        self.create_request_for_disqualified_sub_aliquots()
-
-        self.create_trasfer_script_file()
-         """
-
         # check for errors and put final log entry for the inquiry.
         if self.error.exist():
             _str = 'Processing of the current inquiry was finished with the following errors: {}\n'.format(
@@ -429,18 +387,23 @@ class Inquiry(File):
             for src_item in self.data_sources.source_content_arr:
                 match = False
                 # attempt match by the sub-aliquot
-                if self.is_item_found_soft_match(sub_al, src_item['name'], src_item['soft_comparisions'], sub_al):
+                match_out, match_details = \
+                    self.is_item_found_soft_match(sub_al, src_item['name'], src_item['soft_comparisions'], sub_al)
+                if match_out:
                     match = True
                 # if sub-aliquot match was not success, attempt to match by the aliquot
                 elif src_item['aliquot_match']:
-                    if self.is_item_found_soft_match(al, src_item['name'], src_item['soft_comparisions'], sub_al):
+                    match_out, match_details = \
+                        self.is_item_found_soft_match(al, src_item['name'], src_item['soft_comparisions'], sub_al)
+                    if match_out:
                         match = True
                 # if a match was found using one of the above methods, record the item to inq_match_arr
                 if match:
                     item_details = {
                         'sub-aliquot': sub_al,
                         'study': inq_study_path,
-                        'source': src_item
+                        'source': src_item,
+                        'match_details': match_details
                     }
                     self.inq_match_arr.append(item_details)
 
@@ -451,7 +414,7 @@ class Inquiry(File):
 
     def is_item_found_soft_match(self, srch_item, srch_in_str, soft_match_arr, item_to_be_reported):
         out = False
-
+        _str = ''
         # identify if the search is performed for sub_aliquot (full value) or aliquot (partial value)
         if srch_item == item_to_be_reported:
             entity = 'sub-aliquot'
@@ -471,7 +434,7 @@ class Inquiry(File):
                     soft_match = True
         # prepare log entry
         if out:
-            _str = str('Soft' if soft_match else 'Exact') + \
+            _str = str('Loose' if soft_match else 'Exact') + \
                    ' match was ' + \
                    'found for {} item "{}". Match values are as following: "{}" and "{}".'\
                        .format(entity, item_to_be_reported, srch_item, srch_in_str)
@@ -488,7 +451,26 @@ class Inquiry(File):
                 else:
                     self.logger.info(_str)
 
-        return out
+        # prepare match details to output from this function
+        match_type = ''
+        if soft_match:
+            # this was a soft match
+            if entity == 'aliquot':
+                match_type = 'loose/aliquot'
+            else:
+                match_type = 'loose'
+        else:
+            # this was an exact match
+            if entity == 'aliquot':
+                match_type = 'exact/aliquot'
+            else:
+                match_type = 'exact'
+
+        out_details = {
+            'match_type': match_type,
+            'details': _str
+        }
+        return out, out_details
 
     def load_source_config(self):
         cfg_source = ConfigData(Path(self.wrkdir) / gc.CONFIG_FILE_SOURCE_NAME)
@@ -499,6 +481,8 @@ class Inquiry(File):
         # path for the script file being created
         rf_path = Path(gc.OUTPUT_REQUESTS_DIR + "/" + time.strftime("%Y%m%d_%H%M%S", time.localtime()) + '_' +
                        self.filename.replace(' ', '') + '.tsv')
+
+        self.download_request_path = rf_path
 
         with open(rf_path, "w") as rf:
             # write headers to the file

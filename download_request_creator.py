@@ -120,7 +120,7 @@ if __name__ == '__main__':
                             errors_present = 'OK'
                         else:
                             # some disqualified sub-aliquots are presetn
-                            fl_status = 'OK with Disqualifications'
+                            fl_status = 'OK_with_Disqualifications'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
                             errors_present = 'DISQUALIFY'
                     else:
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                     # if Processed folder does not exist in the Inquiry source sub-folder, it will be created
                     os.makedirs(processed_dir, exist_ok=True)
 
-                    inq_processed_name = ts + '_' + fl_status + '_' + inq_file
+                    inq_processed_name = ts + '_' + fl_status + '_' + inq_file.replace(' ', '_').replace('__','_')
                     # print('New file name: {}'.format(ts + '_' + fl_status + '_' + fl))
                     # move processed files to Processed folder
                     os.rename(inq_path, processed_dir / inq_processed_name)
@@ -151,39 +151,48 @@ if __name__ == '__main__':
                     # TODO: add to body info about location of submission package per inquiry, list of aliquots(?)
                     #  and corresponded bulk drive attachment path
                     # preps for email notification
-                    """
+
+                    nbsp = 3
                     email_msgs.append(
-                        ('Experiment: {}.'
-                         '<br/> Inquiry file <br/>{} <br/> was processed and moved/renamed to <br/> {}.'
+                        ('Inquiry file (#{}): <br/>{} <br/> was processed and moved/renamed to: <br/> {}.'
                          '<br/> <b>Errors summary:</b> '
                          '<br/> {}'
                          '<br/> <i>Log file location: <br/>{}</i>'
-                         '<br/> Created Download Request locatoin:<br/>{}'
-                         '<br/> Data source locatoin:<br/>{}'
-                         '<br/> Processed Aliquots:<br/>{}'
-                         '<br/> Disqualified Aliquots (if present, see the log file for more details):<br/>{}'
-                         '<br/> A inquiry file for re-processing Disqualified Aliquots was prepared in:<br/>{}'
-                         '<br/> Command line to run data transferring: <br/> {}'
-                         ''.format(inq_obj.experiment_id,
-                                   inq_path,
-                                   processed_dir / inq_processed_name,
+                         '<br/> Created Download Request file locatoin:<br/>{}'
+                         '<br/> Data sources used for this inquiry:<br/>{}'
+                         '<br/> <font color="green"><b>Processed Aliquots:</b></font><br/>{}'
+                         # TODO: add list of soft matched sub-aliquots
+                         '<br/> <b>Disqualified Aliquots</b> (if present, see the log file for more details):<br/>{}'
+                         '<br/> A inquiry file for re-processing Disqualified Aliquots was saved in:<br/>{}'
+                         ''.format(inq_proc_cnt,
+                                    '&nbsp;'*nbsp + str(inq_path),
+                                   '&nbsp;'*nbsp + str(processed_dir / inq_processed_name),
                                    '<font color="red">Check Errors in the log file </font>'
                                                             if inq_obj.error.exist()
                                                             else '<font color="green">No Errors</font> ',
-                                   inq_obj.log_handler.baseFilename,
-                                   inq_obj.submission_package.submission_dir,
-                                   inq_obj.attachments.data_loc,
-                                   inq_obj.qualified_aliquots
-                                                            if inq_obj.qualified_aliquots else 'None',
-                                   [val for val in inq_obj.disqualified_items.keys()]
+                                   '&nbsp;'*nbsp + inq_obj.log_handler.baseFilename,
+                                   '&nbsp;'*nbsp + str(inq_obj.download_request_path),
+                                   '<br>'.join(['&nbsp;'*nbsp + ds['path'] for ds in inq_obj.data_sources.source_locations])
+                                                            if inq_obj.data_sources.source_locations else 'None',
+                                   '<br>'.join(['&nbsp;'*nbsp + item['sub-aliquot'] + ' (' + item['study'] + ')' +
+                                        (' - {}{} match ->{}'.format(
+                                            '<b> warning - ' if item['match_details']['match_type'] != 'exact' else '<font color="green">',
+                                            item['match_details']['match_type'],
+                                            '</b> ' if item['match_details']['match_type'] != 'exact' else '</font> '))
+                                                + '{} ({})'.format(item['source']['name'], item['source']['path'])
+                                        for item in inq_obj.inq_match_arr])
+                                                            if inq_obj.inq_match_arr else 'None',
+                                   '<br>'.join(['&nbsp;'*nbsp + val +
+                                                ' - <font color="red">status: {}</font>'
+                                               .format(inq_obj.disqualified_items[val]['status'])
+                                                for val in inq_obj.disqualified_items.keys()])
                                                             if inq_obj.disqualified_items else 'None',
-                                   inq_obj.disqualified_inquiry_path,
-                                   str(Path(inq_obj.submission_package.submission_dir) / 'transfer_script.sh')
+                                   '&nbsp;'*nbsp + str(inq_obj.disqualified_inquiry_path)
                                    )
                          )
                          
                     )
-                    """
+
                     # email_attchms.append(inq_obj.log_handler.baseFilename)
 
                     # print ('email_msgs = {}'.format(email_msgs))
@@ -199,14 +208,16 @@ if __name__ == '__main__':
         mlog.info('Number of successfully processed Submission inquiries = {}'.format(inq_proc_cnt))
 
         # start Data Download request if proper config setting was provided
+        dd_status = ''
         if run_data_download:
             # start process
+            #TODO: put try/catch around a call to an external command
+            #TODO: add loging info to the log file
             dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
             # check if it is running
             dd_status = cm.check_external_process(dd_process)
 
-        # TODO: populate email subject with appropriate info
-        email_subject = ''
+        email_subject = 'processing of download inquiry.'
 
         if inq_proc_cnt > 0:
             # collect final details and send email about this study results
@@ -219,6 +230,10 @@ if __name__ == '__main__':
                 email_subject = 'ERROR(s) present during ' + email_subject
 
             email_body = ('Number of inquiries processed: {}.'.format(inq_proc_cnt)
+                          + '<br/>Run Data Downloader setting was set to "{}"'.format(run_data_download)
+                          + ('<br/>Data Downloader location: {}'.format(gc.DATA_DOWNLOADER_PATH) if run_data_download else '')
+                          + ('<br/>Status of starting Data Downloader: {}'.format(dd_status) if run_data_download else '')
+                          + '<br/><br/>Processed Inquiry\'s details:'
                           + '<br/><br/>'
                           + '<br/><br/>'.join(email_msgs)
                           )

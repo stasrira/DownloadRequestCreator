@@ -13,12 +13,14 @@ class DataSource(DataRetrieval):
 
     def __init__(self, inquiry):
         self.source_content_arr = []
+        self.source_locations = None
         # self.data_loc = None
         # self.cnf_data_source = None
         DataRetrieval.__init__(self, inquiry)
 
     def init_specific_settings(self):
         source_locations = self.conf_process_entity.get_value('Datasource/locations')
+        self.source_locations = source_locations
         # default search_by parameters from source config file
         search_by_default = self.conf_process_entity.get_value('Datasource/search_method_default/search_by')
         search_deep_level_defalult = self.conf_process_entity.get_value(
