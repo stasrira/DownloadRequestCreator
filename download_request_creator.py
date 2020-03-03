@@ -161,7 +161,6 @@ if __name__ == '__main__':
                          '<br/> Created Download Request file locatoin:<br/>{}'
                          '<br/> Data sources used for this inquiry:<br/>{}'
                          '<br/> <font color="green"><b>Processed Aliquots:</b></font><br/>{}'
-                         # TODO: add list of soft matched sub-aliquots
                          '<br/> <b>Disqualified Aliquots</b> (if present, see the log file for more details):<br/>{}'
                          '<br/> A inquiry file for re-processing Disqualified Aliquots was saved in:<br/>{}'
                          ''.format(inq_proc_cnt,
