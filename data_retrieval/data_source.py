@@ -13,6 +13,7 @@ class DataSource(DataRetrieval):
 
     def __init__(self, inquiry):
         self.source_content_arr = []
+        self.disqualified_data_sources = {}
         self.source_locations = None
         # self.data_loc = None
         # self.cnf_data_source = None
@@ -97,10 +98,11 @@ class DataSource(DataRetrieval):
                 else:
                     items = self.get_web_data(ds_path, xpath, exclude_dirs, ext_match)
             else:
-                _str = 'Unexpected "search_by" configuration parameter "{}" was provided. ' \
-                       'Skipping processing of the current source "{}"'.format(search_by, ds_path)
-                self.logger.critical(_str)
-                self.error.add_error(_str)
+                _str = 'Unexpected "search_by" configuration parameter "{}" was provided.'.format(search_by)
+                _str2 = 'Skipping processing of the current source "{}"'.format(ds_path)
+                self.logger.warning('{} {}'.format(_str, _str2))
+                # self.error.add_error(_str)
+                self.disqualified_data_sources[loc_item['path']] = _str
                 continue
 
             if items and len(items) > 0:

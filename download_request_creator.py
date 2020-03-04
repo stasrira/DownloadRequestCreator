@@ -150,33 +150,50 @@ if __name__ == '__main__':
 
                     # preps for email notification
 
+                    # TODO: move this step to a separate function
                     nbsp = 3
                     email_msgs.append(
                         ('Inquiry file (#{}): <br/>{} <br/> was processed and moved/renamed to: <br/> {}.'
                          '<br/> <b>Errors summary:</b><br/>{}'
                          '<br/> <i>Log file location: <br/>{}</i>'
                          '<br/> Created Download Request file locatoin:<br/>{}'
-                         '<br/> Data sources used for this inquiry:<br/>{}'
+                         '<br/> <b>Data sources used for this inquiry:</b><br/>{}'
                          '<br/> <font color="green"><b>Processed Aliquots:</b></font><br/>{}'
                          '<br/> <b>Disqualified Aliquots</b> (if present, see the log file for more details):<br/>{}'
                          '<br/> A inquiry file for re-processing Disqualified Aliquots was saved in:<br/>{}'
                          ''.format(inq_proc_cnt,
                                     '&nbsp;'*nbsp + str(inq_path),
                                    '&nbsp;'*nbsp + str(processed_dir / inq_processed_name),
-                                   '<font color="red">Check Errors in the log file </font>'
+                                   '<font color="red">Check details for {} Error(s) in the log file </font>'
+                                   .format(inq_obj.error.count)
                                                             if inq_obj.error.exist()
                                                             else '<font color="green">No Errors</font> ',
                                    '&nbsp;'*nbsp + inq_obj.log_handler.baseFilename,
                                    '&nbsp;'*nbsp + str(inq_obj.download_request_path),
-                                   '<br>'.join(['&nbsp;'*nbsp + ds['path'] for ds in inq_obj.data_sources.source_locations])
-                                                            if inq_obj.data_sources.source_locations else 'None',
-                                   '<br>'.join(['&nbsp;'*nbsp + item['sub-aliquot'] + ' (' + item['study'] + ')' +
-                                        (' - {}{} match ->{}'.format(
-                                            '<b> warning - ' if item['match_details']['match_type'] != 'exact' else '<font color="green">',
-                                            item['match_details']['match_type'],
-                                            '</b> ' if item['match_details']['match_type'] != 'exact' else '</font> '))
+                                   '<br>'.join(['&nbsp;'*nbsp + 'Status: {}'
+                                               .format(('<font color="red">Disqualified</font> - {}\n{}'
+                                                    .format(ds['path'],
+                                                        inq_obj.data_sources.disqualified_data_sources[ds['path']])
+                                                            if ds['path'] in
+                                                               inq_obj.data_sources.disqualified_data_sources.keys()
+                                                            else '<font color="green">OK</font> - {}'
+                                                                .format(ds['path'])))
+                                                for ds in inq_obj.data_sources.source_locations
+                                                ])
+                                                if inq_obj.data_sources.source_locations else 'None',
+                                   '<br>'.join(['{}{} ({})'.format('&nbsp;'*nbsp, item['sub-aliquot'], item['study']) +
+                                        (' - {}{} match ->{}'
+                                            .format(
+                                                '<b> warning - ' if item['match_details']['match_type'] != 'exact'
+                                                    else '<font color="green">',
+                                                item['match_details']['match_type'],
+                                                '</b> ' if item['match_details']['match_type'] != 'exact'
+                                                    else '</font> '
+                                                )
+                                        )
                                                 + '{} ({})'.format(item['source']['name'], item['source']['path'])
-                                        for item in inq_obj.inq_match_arr])
+                                        for item in inq_obj.inq_match_arr
+                                                ])
                                                             if inq_obj.inq_match_arr else 'None',
                                    '<br>'.join(['&nbsp;'*nbsp + val +
                                                 ' - <font color="red">status: {}</font>'

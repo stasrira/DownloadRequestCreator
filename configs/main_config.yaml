@@ -12,7 +12,7 @@ Location:
     # path to the folder where processed inquiry files will be stored
     inquiries_processed_relative_path: processed
     # path to Data Downloader tool. It will be executed by the app, if "Execute/run_data_downloader" is set to True
-    data_downloader_path: notepad2.exe
+    data_downloader_path: notepad.exe
 
 Logging:
     #main log - log created by the main application
