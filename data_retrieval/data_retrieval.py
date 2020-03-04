@@ -1,7 +1,10 @@
 from pathlib import Path
 import os
 import glob
-from utils import common as cm
+# from utils import common as cm
+from lxml import html
+import requests
+import traceback
 
 
 class DataRetrieval:
@@ -95,3 +98,37 @@ class DataRetrieval:
             items.extend(items_clean)
             deep_cnt += 1
         return items
+
+    def get_web_data(self, url, str_xpath, exclude_entries=None, ext_match=None):
+        items = []
+        if not exclude_entries:
+            exclude_entries = []
+        try:
+            page = requests.get(url)
+        except Exception as ex:
+            # report error during opening a web location
+            _str = 'Unexpected Error "{}" occurred during opening web location at: "{}"\n{} ' \
+                .format(ex, url, traceback.format_exc())
+            self.logger.critical(_str)
+            self.error.add_error(_str)
+            return items
+
+        content = html.fromstring(page.content)
+
+        try:
+            entries = content.xpath(str_xpath)
+        except Exception as ex:
+            # report error at attempt of applying xpath
+            _str = 'Unexpected Error "{}" occurred during applying xpath value "{}" against content of URL "{}"\n{} ' \
+                .format(ex, str_xpath, url, traceback.format_exc())
+            self.logger.critical(_str)
+            self.error.add_error(_str)
+            return items
+
+        for entry in entries:
+            if not entry in exclude_entries:
+                if (ext_match and Path(entry).endswith(ext_match)) or (not ext_match):
+                    items.append(entry)
+                    # print (entry)
+        return items
+

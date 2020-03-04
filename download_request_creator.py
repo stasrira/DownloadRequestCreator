@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
                 try:
                     # print('--------->Process file {}'.format(inq_path))
-                    mlog.info('Inquiry file {} was selected for processing.'.format(inq_path))
+                    mlog.info('The following Inquiry file was selected: "{}".'.format(inq_path))
 
                     # save timestamp of beginning of the file processing
                     ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
                     if inq_obj and inq_obj.loaded:
                         # proceed processing inquiry
-                        mlog.info('Inquiry loading status: Success. Submission inquiry file: "{}".'
-                                  .format(inq_path))
+                        mlog.info('Inquiry file was successfully loaded.')
+                        mlog.info('Starting processing Download Inquiry file: "{}".'.format(inq_path))
 
                         inq_obj.process_inquiry()
 
@@ -148,15 +148,12 @@ if __name__ == '__main__':
                     mlog.info('Processed Download Inquiry "{}" was moved and renamed as: "{}"'
                               .format(inq_path, processed_dir / inq_processed_name))
 
-                    # TODO: add to body info about location of submission package per inquiry, list of aliquots(?)
-                    #  and corresponded bulk drive attachment path
                     # preps for email notification
 
                     nbsp = 3
                     email_msgs.append(
                         ('Inquiry file (#{}): <br/>{} <br/> was processed and moved/renamed to: <br/> {}.'
-                         '<br/> <b>Errors summary:</b> '
-                         '<br/> {}'
+                         '<br/> <b>Errors summary:</b><br/>{}'
                          '<br/> <i>Log file location: <br/>{}</i>'
                          '<br/> Created Download Request file locatoin:<br/>{}'
                          '<br/> Data sources used for this inquiry:<br/>{}'
@@ -187,6 +184,7 @@ if __name__ == '__main__':
                                                 for val in inq_obj.disqualified_items.keys()])
                                                             if inq_obj.disqualified_items else 'None',
                                    '&nbsp;'*nbsp + str(inq_obj.disqualified_inquiry_path)
+                                                            if inq_obj.disqualified_items else 'N/A'
                                    )
                          )
                          
@@ -207,16 +205,23 @@ if __name__ == '__main__':
         mlog.info('Number of successfully processed Submission inquiries = {}'.format(inq_proc_cnt))
 
         # start Data Download request if proper config setting was provided
-        dd_status = ''
+        dd_status = {'status': '', 'message': ''}
         if run_data_download:
             # start process
-            #TODO: put try/catch around a call to an external command
-            #TODO: add loging info to the log file
-            dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
-            # check if it is running
-            dd_status = cm.check_external_process(dd_process)
+            mlog.info('Starting asyncroniously Data Downloader app: "{}".'.format(gc.DATA_DOWNLOADER_PATH))
+            try:
+                dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
+                # check if it is running
+                dd_status = cm.check_external_process(dd_process)
+                mlog.info('Status of running Data Downloader app: "{}".'.format(dd_status))
+            except Exception as ex:
+                # report unexpected error during starting Data Downloader
+                _str = 'Unexpected Error "{}" occurred during an attempt to start Data Downloader app ({})\n{} ' \
+                    .format(ex, gc.DATA_DOWNLOADER_PATH, traceback.format_exc())
+                mlog.critical(_str)
+                dd_status = {'status': 'Error', 'message': _str}
 
-        email_subject = 'processing of download inquiry.'
+        email_subject = 'processing of download inquiry. '
 
         if inq_proc_cnt > 0:
             # collect final details and send email about this study results
@@ -228,10 +233,13 @@ if __name__ == '__main__':
             else:
                 email_subject = 'ERROR(s) present during ' + email_subject
 
+            if dd_status and 'status' in dd_status.keys() and dd_status['status'].lower() == 'error':
+                email_subject = email_subject + 'Errors starting Data Downloader.'
+
             email_body = ('Number of inquiries processed: {}.'.format(inq_proc_cnt)
                           + '<br/>Run Data Downloader setting was set to "{}"'.format(run_data_download)
                           + ('<br/>Data Downloader location: {}'.format(gc.DATA_DOWNLOADER_PATH) if run_data_download else '')
-                          + ('<br/>Status of starting Data Downloader: {}'.format(dd_status) if run_data_download else '')
+                          + ('<br/>Status of starting Data Downloader: {}'.format(dd_status['status']) if run_data_download else '')
                           + '<br/><br/>Processed Inquiry\'s details:'
                           + '<br/><br/>'
                           + '<br/><br/>'.join(email_msgs)

@@ -112,6 +112,6 @@ venv.bak/
 #processed folders
 /outcome_requests
 /inquiries/Minerva_ATACseq/logs
-/inquiries/Minerva_RNAseq/logs
+/inquiries/BobyLab/logs
 *processed/
 *reprocess/

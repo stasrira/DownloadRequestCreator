@@ -6,11 +6,12 @@ def convert_sub_aliq_to_aliquot(sa, assay):
     aliquot = sa
     fl_cfg_dict = ConfigData(gc.CONFIG_FILE_DICTIONARY)
     assay = fl_cfg_dict.get_item_by_key('assay/' + assay.lower())
-    assay_postfix = fl_cfg_dict.get_item_by_key('assay_sub_aliquot_postfix/' + assay)
-    if assay_postfix is not None:
-        apf_len = len(assay_postfix)
-        if sa[-apf_len:] == assay_postfix:
-            aliquot = sa[:len(sa) - apf_len]
+    if assay is not None:
+        assay_postfix = fl_cfg_dict.get_item_by_key('assay_sub_aliquot_postfix/' + assay)
+        if assay_postfix is not None:
+            apf_len = len(assay_postfix)
+            if sa[-apf_len:] == assay_postfix:
+                aliquot = sa[:len(sa) - apf_len]
     return aliquot
 
 

@@ -42,7 +42,8 @@ specimen_prep:
     paxgenes: PaxGenes
 
 inquiry_file_structure:
-    1: exposure
-    2: center
-    3: specimen_prep
-    4: assay
+    "1": exposure
+    "2": center
+    "3": specimen_prep
+    "4": assay
+    "5": sub-aliquot

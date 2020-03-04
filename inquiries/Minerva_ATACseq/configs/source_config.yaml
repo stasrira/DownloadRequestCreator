@@ -12,7 +12,7 @@ Datasource:
             # this section describes search parameters that will be related to the current data source
             # any of the values can be omitted
             search_method: # search_rawdata_summary
-                search_by: folder_name # possible options: file_name and folder_name
+                search_by: folder_name1 # possible options: file_name and folder_name
                 search_deep_level_max: 1 # 0: root folder, 1:first sub-folder, etc.
                 # exclude the following sub-folders from the search
                 exclude_folders:

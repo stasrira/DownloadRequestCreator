@@ -132,31 +132,15 @@ class Inquiry(File):
                 self.lines_arr = lines
                 self.columns_arr = columns
 
-                #populate lineList value as required for the base class
+                # populate lineList value as required for the base class
                 self.lineList = []
                 for ln in lines:
                     self.lineList.append(','.join(ln))
 
                 wb.unload_sheet(sheet.name)
 
-                # TODO: add validation for the values read from the inquiry file
-
-                # load passed inquiry parameters (by columns)
-                # self.get_request_parameters()
-                # Log type of the inquiry being processed
-                # self.logger.info('Current inquiry Type was identified as "{}"'.format(self.type))
-
-                # to support decision of not supplying Project Name from Request file,
-                # it will be retrieved from gc module
-                #self.project = gc.PROJECT_NAME
-
-                # validate provided information
-                # self.logger.info('Validating provided inquiry parameters. Exposure: "{}", '
-                #                 'Center: "{}", Source specimen type: "{}", Experiment: {}, '
-                #                 'Sub-Aliquots: "{}", Aliquots: "{}"'
-                #                 .format(self.exposure, self.center, self.source_spec_type,
-                #                         self.experiment_id, self.sub_aliquots, self.samples))
-                # self.validate_request_params()
+                # perform validation of the current inquiry file
+                self.validate_inquiry_file()
 
                 if self.error.exist():
                     # report that errors exist
@@ -167,11 +151,6 @@ class Inquiry(File):
                         self.error.count, self.error.get_errors_to_str())
                 else:
                     self.loaded = True
-                    _str = 'Request parameters were successfully validated - no errors found.'
-                self.logger.info(_str)
-
-                # calculate Experiment_id out of inquiry paramaters
-                # self.experiment_id = "_".join([self.exposure, self.center, self.source_spec_type, self.assay])
 
             else:
                 _str = 'Loading content of the file "{}" failed since the file does not appear to exist".'.format(
@@ -184,144 +163,37 @@ class Inquiry(File):
                 self.loaded = False
         return self.lineList
 
-    # get all values provided in the inquiry file
-    def get_request_parameters(self):
-        col_count = len(self.columns_arr)
-        # TODO: this check is not required as of now, but maybe useful
-        """
-        if col_count < 7:
-            # if 7th column is not provided, assume that it is a Sequence inquiry and set inquiry's type appropriately
-            # otherwise the type value will be received from the file
-            self.type = gc.DEFAULT_REQUEST_TYPE.lower()
-        """
-        for i in range(col_count):
-            if len(self.columns_arr[i]) > 1:
-                first_val = self.columns_arr[i][1]
-            else:
-                first_val = ''
-
-            if i == 0:
-                self.exposure = first_val
-            elif i == 1:
-                self.center = first_val
-            elif i == 2:
-                self.source_spec_type = first_val
-            elif i == 3:
-                self.assay = first_val.lower()
-            elif i == 4:
-                self.sub_aliquots = self.columns_arr[i]
-                if self.sub_aliquots and len(self.sub_aliquots) > 0:
-                    self.sub_aliquots.pop(0)  # get rid of the column header
-            elif i == 5:
-                self.samples = self.columns_arr[i]
-                if self.samples and len(self.samples) > 0:
-                    self.samples.pop(0)  # get rid of the column header
-            elif i == 6:
-                self.type = first_val.lower()
-            else:
-                break
-
-    # validates provided parameters (loaded from the submission inquiry file)
-    def validate_request_params(self):
-        if self.type == 'sequence':
-            self.validate_request_params_sequence()
-        elif self.type == 'metadata':
-            self.validate_request_params_metadata()
-        else:
-            _str_err = 'Supplied inquiry type value "{}" is not expected! Aborting processing of the ' \
-                       'submission inquiry.'.format(self.type)
-            self.error.add_error(_str_err)
-            self.logger.error(_str_err)
-
     def validate_inquiry_file(self):
-        # for col in self.columns_arr:
+        self.logger.info('Start validating the current inquiry file "{}".'.format(self.filepath))
+        row_count = 1
+        failed_cnt = 0
+        for row in self.lines_arr:
+            if row_count == self.header_row_num:  # 1
+                # skip the first column as it is a header
+                row_count +=1
+                continue
+            sub_al = row[4]  # get value that supposed to present a sub-aliquot value
+            # go through 4 first fields and validate that provided values are expected
+            for i in range(4):
+                col_category = cm2.get_dict_value(str(i+1), 'inquiry_file_structure')
+                if not cm2.key_exists_in_dict(str(row[i]).lower(), col_category):
+                    _str = 'Unexpected value "{}" was provided for "{}" (line #{}, column #{})'\
+                        .format(row[i],col_category, row_count, i+1)
+                    self.logger.critical(_str)
+                    # disqualify an inquiry file row, if unexpected value was provided for any of the first 4 fields
+                    self.disqualify_inquiry_item(sub_al, _str, row)
 
+                    failed_cnt +=1
+                    break
 
-        _str_err = ''
-        _str_warn = ''
-        if len(self.sub_aliquots) == 0:
-            _str_err = '\n'.join([_str_err, 'List of provided sub-samples is empty. '
-                                            'Aborting processing of the submission inquiry.'])
-        # Check if empty sub-aliquots were provided
-        if self.sub_aliquots and '' in self.sub_aliquots:
-            i = 0
-            cleaned_cnt = 0
-            for s, a in zip(self.sub_aliquots, self.samples):
-                # check for any empty sub-aliquot values and remove them. Also remove corresponded Aliquot values
-                if len(s.strip()) == 0:
-                    self.sub_aliquots.pop(i)
-                    self.samples.pop(i)
-                    cleaned_cnt += 1
-                else:
-                    i += 1
-            if cleaned_cnt > 0:
-                _str_warn = '\n'.join([_str_warn, 'Empty sub-aliqouts (count = {}) were removed from the list. '
-                                                  'Here is the list of sub-aliqouts after cleaning (count = {}): "{}" '
-                                      .format(cleaned_cnt, len(self.sub_aliquots), self.sub_aliquots)])
-        # if len(self.project) == 0:
-        #    _str_err = '\n'.join(
-        #        [_str_err, 'No Project name was provided. Aborting processing of the submission inquiry.'])
-        if len(self.exposure) == 0:
-            _str_err = '\n'.join([_str_err, 'No Exposure was provided. Aborting processing of the submission inquiry.'])
-        if len(self.center) == 0:
-            _str_err = '\n'.join([_str_err, 'No Center was provided. Aborting processing of the submission inquiry.'])
-        if len(self.source_spec_type) == 0:
-            _str_err = '\n'.join(
-                [_str_err, 'No Specimen type was provided. Aborting processing of the submission inquiry.'])
-        if len(self.assay) == 0:
-            _str_err = '\n'.join([_str_err, 'No Assay was provided. Aborting processing of the submission inquiry.'])
-        if not cm2.key_exists_in_dict(self.assay, 'assay'):
-            _str_err = '\n'.join([_str_err, 'Provided Assay name "{}" is not matching a list of expected assay names '
-                                            '(as stored in "{}" dictionary file). '
-                                            'Aborting processing of the submission inquiry.'
-                                 .format(self.assay, gc.CONFIG_FILE_DICTIONARY)])
-        else:
-            # if provided assay name is expected, convert it to the name expected by the Submission logic
-            self.assay = cm2.get_dict_value(self.assay, 'assay')
-            # get list of aliquots from list of sub-aliquots
-            self.aliquots = [cm2.convert_sub_aliq_to_aliquot(al, self.assay) for al in self.sub_aliquots]
+            row_count +=1
 
-        # report any collected errors
-        if len(_str_err) > 0:
-            _str_err = 'Validation of inquiry parameters:' + _str_err
-            self.error.add_error(_str_err)
-            self.logger.error(_str_err)
-        # report any collected warnings
-        if len(_str_warn) > 0:
-            _str_warn = 'Validation of inquiry parameters:' + _str_warn
-            self.logger.warning(_str_warn)
-
-    def validate_request_params_metadata(self):
-        _str_err = ''
-        _str_warn = ''
-        # Check if empty sub-aliquots were provided
-        if self.samples and '' in self.samples:
-            i = 0
-            cleaned_cnt = 0
-            for sa, s in zip(self.sub_aliquots, self.samples):
-                # check for any empty sub-aliquot values and remove them. Also remove corresponded Aliquot values
-                if len(s.strip()) == 0:
-                    self.sub_aliquots.pop(i)
-                    self.samples.pop(i)
-                    cleaned_cnt += 1
-                else:
-                    i += 1
-            if cleaned_cnt > 0:
-                _str_warn = '\n'.join([_str_warn, 'Empty Samples (count = {}) were removed from the list. '
-                                                  'Here is the list of samples after cleaning (count = {}): "{}" '
-                                      .format(cleaned_cnt, len(self.samples), self.samples)])
-        if len(self.center) == 0:
-            _str_err = '\n'.join([_str_err, 'No Center was provided. Aborting processing of the submission inquiry.'])
-
-        # report any collected errors
-        if len(_str_err) > 0:
-            _str_err = 'Validation of inquiry parameters:' + _str_err
-            self.error.add_error(_str_err)
-            self.logger.error(_str_err)
-        # report any collected warnings
-        if len(_str_warn) > 0:
-            _str_warn = 'Validation of inquiry parameters:' + _str_warn
-            self.logger.warning(_str_warn)
+        self.logger.info('Finish validating the inquiry file with{}.'
+                         .format(' no errors.'
+                                    if failed_cnt == 0
+                                    else ' errors; {} records were disqualified - see earlier log entries for details'
+                                 .format(failed_cnt)
+                                 ))
 
     def setup_logger(self, wrkdir, filename):
 
@@ -373,19 +245,25 @@ class Inquiry(File):
                 cur_row += 1
                 continue
             # print(inq_line)
-            # concatenate study_id for the current inquiry line
-            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(i, 'inquiry_file_structure'))
+            # concatenate study_id for the current inquiry line using conversion of the field values
+            # set in the dict_config.yaml
+            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(str(i+1), 'inquiry_file_structure'))
                                        for i in range(4)])
             # print (inq_study_path)
             assay = inq_line[3]  # identify assay for the current inquiry line
             sub_al = inq_line[4]  # identify sub-aliquot for the current inquiry line
+
+            # check if current sub-aliquot is not part of disqualified items array
+            if self.disqualified_items and sub_al in self.disqualified_items.keys():
+                # if sub-aliquot was disqualifed already, skip this line
+                continue
 
             # identify aliquot for the given sub-aliquot
             al = cm2.convert_sub_aliq_to_aliquot(sub_al, assay) # identify aliquot for the current inquiry line
 
             match = False
             for src_item in self.data_sources.source_content_arr:
-                match = False
+                match_out = False
                 # attempt match by the sub-aliquot
                 match_out, match_details = \
                     self.is_item_found_soft_match(sub_al, src_item['name'], src_item['soft_comparisions'], sub_al)
@@ -398,7 +276,7 @@ class Inquiry(File):
                     if match_out:
                         match = True
                 # if a match was found using one of the above methods, record the item to inq_match_arr
-                if match:
+                if match_out:
                     item_details = {
                         'sub-aliquot': sub_al,
                         'study': inq_study_path,
@@ -409,8 +287,6 @@ class Inquiry(File):
 
             if not match:
                 self.disqualify_inquiry_item(sub_al, 'No match found in the data source.', inq_line)
-
-
 
     def is_item_found_soft_match(self, srch_item, srch_in_str, soft_match_arr, item_to_be_reported):
         out = False
@@ -484,6 +360,11 @@ class Inquiry(File):
 
         self.download_request_path = rf_path
 
+        if not self.inq_match_arr:
+            self.logger.warning('No inquiries with matched datasources exists for the current inquiry file. '
+                                 'Skipping creating a download request file.')
+            return
+
         with open(rf_path, "w") as rf:
             # write headers to the file
             headers = '\t'.join(['Source', 'Destination', 'Aliquot_id'])
@@ -497,6 +378,11 @@ class Inquiry(File):
                 study_path = item['study']
                 target_subfolder = item['source']['target_subfolder']
                 sub_aliquot = item['sub-aliquot']
+
+                # check if current sub-aliquot is not part of disqualified items array
+                if self.disqualified_items and sub_aliquot in self.disqualified_items.keys():
+                    # if sub-aliquot was disqualifed already, skip this line
+                    continue
 
                 # get template for the destination path and replace placeholders with values
                 # "{project_path}/{study_path}/{target_subfolder}"
@@ -560,50 +446,6 @@ class Inquiry(File):
                                                   '_reprocess_disqualified_' +
                                                 # .stem method is used to get file name without an extension
                                                   Path(self.filename).stem.replace(' ', '') + '.xls')
-
-            wb.save(str(self.disqualified_inquiry_path))
-
-            self.logger.info("Successfully prepared the inquiry file for disqualified sub-aliquots and saved in '{}'."
-                             .format(str(self.disqualified_inquiry_path)))
-
-
-    def create_request_for_disqualified_sub_aliquots(self):
-
-        # proceed only if some disqualified sub-aliquots are present
-        if self.disqualified_items:
-
-            self.logger.info("Start preparing a inquiry file for disqualified sub-aliquots '{}'."
-                             .format([val for val in self.disqualified_items.keys()]))
-
-            wb = xlwt.Workbook()  # create empty workbook object
-            sh = wb.add_sheet('Submission_Request')  # sheet name can not be longer than 32 characters
-
-            cur_row = 0 # first row for 0-based array
-            cur_col = 0 # first col for 0-based array
-            #write headers to the file
-            headers = self.get_headers()
-            for val in headers:
-                sh.write (cur_row, cur_col, val)
-                cur_col += 1
-
-            cur_row += 1
-
-            for sa, s in zip (self.sub_aliquots, self.samples):
-                if sa in self.disqualified_items.keys():
-                    sh.write(cur_row, 0, self.exposure)
-                    sh.write(cur_row, 1, self.center)
-                    sh.write(cur_row, 2, self.source_spec_type)
-                    sh.write(cur_row, 3, self.assay)
-                    sh.write(cur_row, 4, sa)
-                    sh.write(cur_row, 5, s)
-                    cur_row += 1
-
-            self.disqualified_inquiry_path = Path(gc.DISQUALIFIED_INQUIRIES + '/' +
-                                                  time.strftime("%Y%m%d_%H%M%S", time.localtime()) + '_reprocess_disqualified _' +
-                                                  Path(self.filename).stem + '.xls')
-
-            # if DISQUALIFIED_INQUIRIES folder does not exist, it will be created
-            os.makedirs(gc.DISQUALIFIED_INQUIRIES, exist_ok=True)
 
             wb.save(str(self.disqualified_inquiry_path))
 
