@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
                 try:
                     # print('--------->Process file {}'.format(inq_path))
-                    mlog.info('Inquiry file {} was selected for processing.'.format(inq_path))
+                    mlog.info('The following Inquiry file was selected: "{}".'.format(inq_path))
 
                     # save timestamp of beginning of the file processing
                     ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
@@ -102,8 +102,8 @@ if __name__ == '__main__':
 
                     if inq_obj and inq_obj.loaded:
                         # proceed processing inquiry
-                        mlog.info('Inquiry loading status: Success. Submission inquiry file: "{}".'
-                                  .format(inq_path))
+                        mlog.info('Inquiry file was successfully loaded.')
+                        mlog.info('Starting processing Download Inquiry file: "{}".'.format(inq_path))
 
                         inq_obj.process_inquiry()
 
@@ -117,12 +117,13 @@ if __name__ == '__main__':
                             # no disqualified sub-aliquots present
                             fl_status = 'OK'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
-                            errors_present = 'OK'
+                            # errors_present = 'OK'  # this variable is set to OK by default, no update needed
                         else:
                             # some disqualified sub-aliquots are presetn
                             fl_status = 'OK_with_Disqualifications'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
-                            errors_present = 'DISQUALIFY'
+                            if not errors_present == 'ERROR':
+                                errors_present = 'DISQUALIFY'
                     else:
                         fl_status = 'ERROR'
                         _str = 'Processing status: "{}". Check processing log file for this inquiry: {}' \
@@ -141,45 +142,59 @@ if __name__ == '__main__':
                     # if Processed folder does not exist in the Inquiry source sub-folder, it will be created
                     os.makedirs(processed_dir, exist_ok=True)
 
-                    inq_processed_name = ts + '_' + fl_status + '_' + inq_file.replace(' ', '_').replace('__','_')
+                    inq_processed_name = ts + '_' + fl_status + '_' + str(inq_file).replace(' ', '_').replace('__','_')
                     # print('New file name: {}'.format(ts + '_' + fl_status + '_' + fl))
                     # move processed files to Processed folder
                     os.rename(inq_path, processed_dir / inq_processed_name)
                     mlog.info('Processed Download Inquiry "{}" was moved and renamed as: "{}"'
                               .format(inq_path, processed_dir / inq_processed_name))
 
-                    # TODO: add to body info about location of submission package per inquiry, list of aliquots(?)
-                    #  and corresponded bulk drive attachment path
                     # preps for email notification
 
+                    # TODO: move this step to a separate function
                     nbsp = 3
                     email_msgs.append(
                         ('Inquiry file (#{}): <br/>{} <br/> was processed and moved/renamed to: <br/> {}.'
-                         '<br/> <b>Errors summary:</b> '
-                         '<br/> {}'
+                         '<br/> <b>Errors summary:</b><br/>{}'
                          '<br/> <i>Log file location: <br/>{}</i>'
                          '<br/> Created Download Request file locatoin:<br/>{}'
-                         '<br/> Data sources used for this inquiry:<br/>{}'
+                         '<br/> <b>Data sources used for this inquiry:</b><br/>{}'
                          '<br/> <font color="green"><b>Processed Aliquots:</b></font><br/>{}'
                          '<br/> <b>Disqualified Aliquots</b> (if present, see the log file for more details):<br/>{}'
                          '<br/> A inquiry file for re-processing Disqualified Aliquots was saved in:<br/>{}'
                          ''.format(inq_proc_cnt,
                                     '&nbsp;'*nbsp + str(inq_path),
                                    '&nbsp;'*nbsp + str(processed_dir / inq_processed_name),
-                                   '<font color="red">Check Errors in the log file </font>'
+                                   '<font color="red">Check details for {} Error(s) in the log file </font>'
+                                   .format(inq_obj.error.count)
                                                             if inq_obj.error.exist()
                                                             else '<font color="green">No Errors</font> ',
                                    '&nbsp;'*nbsp + inq_obj.log_handler.baseFilename,
                                    '&nbsp;'*nbsp + str(inq_obj.download_request_path),
-                                   '<br>'.join(['&nbsp;'*nbsp + ds['path'] for ds in inq_obj.data_sources.source_locations])
-                                                            if inq_obj.data_sources.source_locations else 'None',
-                                   '<br>'.join(['&nbsp;'*nbsp + item['sub-aliquot'] + ' (' + item['study'] + ')' +
-                                        (' - {}{} match ->{}'.format(
-                                            '<b> warning - ' if item['match_details']['match_type'] != 'exact' else '<font color="green">',
-                                            item['match_details']['match_type'],
-                                            '</b> ' if item['match_details']['match_type'] != 'exact' else '</font> '))
+                                   '<br>'.join(['&nbsp;'*nbsp + 'Status: {}'
+                                               .format(('<font color="red">Disqualified</font> - {}<br>>{}'
+                                                    .format(ds['path'],
+                                                        '<br>'.join(inq_obj.data_sources.disqualified_data_sources[ds['path']]))
+                                                            if ds['path'] in
+                                                               inq_obj.data_sources.disqualified_data_sources.keys()
+                                                            else '<font color="green">OK</font> - {}'
+                                                                .format(ds['path'])))
+                                                for ds in inq_obj.data_sources.source_locations
+                                                ])
+                                                if inq_obj.data_sources.source_locations else 'None',
+                                   '<br>'.join(['{}{} ({})'.format('&nbsp;'*nbsp, item['sub-aliquot'], item['study']) +
+                                        (' - {}{} match ->{}'
+                                            .format(
+                                                '<b> warning - ' if item['match_details']['match_type'] != 'exact'
+                                                    else '<font color="green">',
+                                                item['match_details']['match_type'],
+                                                '</b> ' if item['match_details']['match_type'] != 'exact'
+                                                    else '</font> '
+                                                )
+                                        )
                                                 + '{} ({})'.format(item['source']['name'], item['source']['path'])
-                                        for item in inq_obj.inq_match_arr])
+                                        for item in inq_obj.inq_match_arr
+                                                ])
                                                             if inq_obj.inq_match_arr else 'None',
                                    '<br>'.join(['&nbsp;'*nbsp + val +
                                                 ' - <font color="red">status: {}</font>'
@@ -187,6 +202,7 @@ if __name__ == '__main__':
                                                 for val in inq_obj.disqualified_items.keys()])
                                                             if inq_obj.disqualified_items else 'None',
                                    '&nbsp;'*nbsp + str(inq_obj.disqualified_inquiry_path)
+                                                            if inq_obj.disqualified_items else 'N/A'
                                    )
                          )
                          
@@ -204,19 +220,29 @@ if __name__ == '__main__':
                                .format(ex, inq_path, traceback.format_exc()))
                     raise
 
-        mlog.info('Number of successfully processed Submission inquiries = {}'.format(inq_proc_cnt))
+        mlog.info('Number of successfully processed Inquiries = {}'.format(inq_proc_cnt))
 
         # start Data Download request if proper config setting was provided
-        dd_status = ''
+        dd_status = {'status': '', 'message': ''}
         if run_data_download:
             # start process
-            #TODO: put try/catch around a call to an external command
-            #TODO: add loging info to the log file
-            dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
-            # check if it is running
-            dd_status = cm.check_external_process(dd_process)
+            mlog.info('Starting asyncroniously Data Downloader app: "{}".'.format(gc.DATA_DOWNLOADER_PATH))
+            try:
+                dd_process = cm.start_external_process_async(gc.DATA_DOWNLOADER_PATH)
+                # check if it is running
+                dd_status = cm.check_external_process(dd_process)
+                mlog.info('Status of running Data Downloader app: "{}".'.format(dd_status))
+            except Exception as ex:
+                # report unexpected error during starting Data Downloader
+                _str = 'Unexpected Error "{}" occurred during an attempt to start Data Downloader app ({})\n{} ' \
+                    .format(ex, gc.DATA_DOWNLOADER_PATH, traceback.format_exc())
+                mlog.critical(_str)
+                dd_status = {'status': 'Error', 'message': _str}
 
-        email_subject = 'processing of download inquiry.'
+        mlog.info('Preparing to send notificatoin email.')
+
+        email_to = m_cfg.get_value('Email/send_to_emails')
+        email_subject = 'processing of download inquiry. '
 
         if inq_proc_cnt > 0:
             # collect final details and send email about this study results
@@ -228,10 +254,13 @@ if __name__ == '__main__':
             else:
                 email_subject = 'ERROR(s) present during ' + email_subject
 
+            if dd_status and 'status' in dd_status.keys() and dd_status['status'].lower() == 'error':
+                email_subject = email_subject + 'Errors starting Data Downloader.'
+
             email_body = ('Number of inquiries processed: {}.'.format(inq_proc_cnt)
                           + '<br/>Run Data Downloader setting was set to "{}"'.format(run_data_download)
                           + ('<br/>Data Downloader location: {}'.format(gc.DATA_DOWNLOADER_PATH) if run_data_download else '')
-                          + ('<br/>Status of starting Data Downloader: {}'.format(dd_status) if run_data_download else '')
+                          + ('<br/>Status of starting Data Downloader: {}'.format(dd_status['status']) if run_data_download else '')
                           + '<br/><br/>Processed Inquiry\'s details:'
                           + '<br/><br/>'
                           + '<br/><br/>'.join(email_msgs)
@@ -240,10 +269,12 @@ if __name__ == '__main__':
             # print ('email_subject = {}'.format(email_subject))
             # print('email_body = {}'.format(email_body))
 
+            mlog.info('Sending a status email with subject "{}" to "{}".'.format(email_subject, email_to))
+
             try:
                 if m_cfg.get_value('Email/send_emails'):
                     email.send_yagmail(
-                        emails_to=m_cfg.get_value('Email/sent_to_emails'),
+                        emails_to= email_to,
                         subject=email_subject,
                         message=email_body
                         # commented adding attachements, since some log files go over 25GB limit and fail email sending
@@ -256,6 +287,7 @@ if __name__ == '__main__':
                     .format(ex, inq_path, os.path.abspath(__file__), traceback.format_exc())
                 mlog.critical(_str)
 
+            mlog.info('End of processing of download inquiries in "{}".'.format(inquiries_path))
 
     except Exception as ex:
         # report unexpected error to log file
