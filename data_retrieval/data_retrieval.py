@@ -31,13 +31,15 @@ class DataRetrieval:
     def get_data_by_file_name(self, data_loc, search_deep_level, exclude_dirs, ext_match):
         # it retrieves all files potentially qualifying to be a source and searches through each to match
         # the sub-aliquot name in the name of the file
-        files = self.get_file_system_items(data_loc, search_deep_level, exclude_dirs, 'file', ext_match)
+        if Path(data_loc).exists():
+            files = self.get_file_system_items(data_loc, search_deep_level, exclude_dirs, 'file', ext_match)
+        else:
+            _str = 'Expected to exist directory "{}" is not present'.format(data_loc)
+            _str2 = '- reported from "DataRetrieval" class, "get_data_by_file_name" function.'
+            self.logger.warning(_str + _str2)
+            self.disqualify_source(data_loc, _str)
+            dirs_path = []
         return files
-
-    def get_data_for_aliquot(self, sa, directory):
-        # this retrieves data related to the purpose of the current class - raw data or attachment info.
-        # should be overwritten in classes that inherit this one
-        pass
 
     def find_locations_by_folder(self, loc_path, search_deep_level, exclude_dirs):
         # get directories of the top level and filter out any directories to be excluded
@@ -63,8 +65,12 @@ class DataRetrieval:
             dirs = list(set(dirs) - set(exclude_dirs))  # remove folders to be excluded from the list of directories
             dirs_path = [str(Path(path + '/' + dr)) for dr in dirs]
         else:
-            self.logger.warning('Expected to exist directory "{}" is not present - reported from "DataRetrieval" '
-                                'class, "get_top_level_dirs" function'.format (path))
+            _str = 'Expected to exist directory "{}" is not present'.format (path)
+            _str2 = '- reported from "DataRetrieval" class, "get_top_level_dirs" function.'
+            # self.logger.warning('Expected to exist directory "{}" is not present - reported from "DataRetrieval" '
+            #                    'class, "get_top_level_dirs" function'.format (path))
+            self.logger.warning(_str + _str2)
+            self.disqualify_source(path, _str)
             dirs_path = []
         return dirs_path
 
@@ -107,10 +113,11 @@ class DataRetrieval:
             page = requests.get(url)
         except Exception as ex:
             # report error during opening a web location
-            _str = 'Unexpected Error "{}" occurred during opening web location at: "{}"\n{} ' \
-                .format(ex, url, traceback.format_exc())
-            self.logger.critical(_str)
-            self.error.add_error(_str)
+            _str = 'Unexpected Error "{}" occurred during opening web location'.format(ex)
+            _str2 = ' at: "{}"\n{} '.format(url, traceback.format_exc())
+            self.logger.critical(_str + _str2)
+            # self.error.add_error(_str + _str2)
+            self.disqualify_source(url, _str)
             return items
 
         content = html.fromstring(page.content)
@@ -119,10 +126,12 @@ class DataRetrieval:
             entries = content.xpath(str_xpath)
         except Exception as ex:
             # report error at attempt of applying xpath
-            _str = 'Unexpected Error "{}" occurred during applying xpath value "{}" against content of URL "{}"\n{} ' \
-                .format(ex, str_xpath, url, traceback.format_exc())
-            self.logger.critical(_str)
-            self.error.add_error(_str)
+            _str = 'Unexpected Error "{}" occurred during applying xpath value "{}" against content'\
+                .format(ex, str_xpath)
+            _str2 = ' of URL "{}"\n{} '.format(url, traceback.format_exc())
+            self.logger.critical(_str + _str2)
+            self.disqualify_source(url, _str)
+            # self.error.add_error(_str + _str2)
             return items
 
         for entry in entries:
@@ -132,3 +141,5 @@ class DataRetrieval:
                     # print (entry)
         return items
 
+    def disqualify_source(self, source_path, reason):
+        pass

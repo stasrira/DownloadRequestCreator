@@ -102,7 +102,8 @@ class DataSource(DataRetrieval):
                 _str2 = 'Skipping processing of the current source "{}"'.format(ds_path)
                 self.logger.warning('{} {}'.format(_str, _str2))
                 # self.error.add_error(_str)
-                self.disqualified_data_sources[loc_item['path']] = _str
+                # self.disqualified_data_sources[loc_item['path']] = _str
+                self.disqualify_source(loc_item['path'], _str)
                 continue
 
             if items and len(items) > 0:
@@ -120,3 +121,11 @@ class DataSource(DataRetrieval):
             self.logger.info('Processing data source #{} was completed. '
                              'Total number of files/folder available in the source = {}.'
                              .format(ds_count, len(items) if items else 0))
+
+    def disqualify_source(self, source_path, reason):
+        if not source_path in self.disqualified_data_sources.keys():
+            self.disqualified_data_sources[source_path] = []
+        self.disqualified_data_sources[source_path].append(reason)
+        self.logger.warning('Data source "{}" was dusqualified with the following reason "{}".'
+                            .format(source_path, reason))
+

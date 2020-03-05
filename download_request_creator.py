@@ -171,9 +171,9 @@ if __name__ == '__main__':
                                    '&nbsp;'*nbsp + inq_obj.log_handler.baseFilename,
                                    '&nbsp;'*nbsp + str(inq_obj.download_request_path),
                                    '<br>'.join(['&nbsp;'*nbsp + 'Status: {}'
-                                               .format(('<font color="red">Disqualified</font> - {}\n{}'
+                                               .format(('<font color="red">Disqualified</font> - {}<br>>{}'
                                                     .format(ds['path'],
-                                                        inq_obj.data_sources.disqualified_data_sources[ds['path']])
+                                                        '<br>'.join(inq_obj.data_sources.disqualified_data_sources[ds['path']]))
                                                             if ds['path'] in
                                                                inq_obj.data_sources.disqualified_data_sources.keys()
                                                             else '<font color="green">OK</font> - {}'
