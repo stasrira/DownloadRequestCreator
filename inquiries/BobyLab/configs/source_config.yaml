@@ -1,7 +1,7 @@
 Datasource:
     locations:
         -
-            path: https://QQQusers.hpc.mssm.edu/~wangy33/10X_Single_Cell_RNA/TD01119_DARPA/
+            path: https://users.hpc.mssm.edu/~wangy33/10X_Single_Cell_RNA/TD01119_DARPA/
             web_location: True
             xpath: "//li/a/@href"
             report_error_on_disqualification: True
@@ -9,9 +9,14 @@ Datasource:
                 exclude_folders:
                     - 046_ATACseq_AS10-16739_2/
         -
-            path: https://users.hpc.mssm.edu/~wangy33/10X_Single_Cell_RNA/TD01119_DARPA/fastqs
+            path: https://users.hpc.mssm.edu/~wangy33/10X_Single_Cell_RNA/TD01119_DARPA/fastqs/130_ATACseq_AS09_03003_2/
             web_location: True
             xpath: "//li/a/@href"
+            search_method:
+                search_by: file_name #possible options: file_name and folder_name
+                file_ext: # must include dot (.) in-front of an extension
+                    - .fastq.gz
+                    - .gz
 
     search_method_default: # search_rawdata_summary
         search_by: folder_name #possible options: file_name and folder_name

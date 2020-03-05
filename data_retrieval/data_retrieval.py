@@ -112,6 +112,7 @@ class DataRetrieval:
         return items
 
     def get_web_data(self, url, str_xpath, exclude_entries=None, ext_match=None):
+        # TODO: implement logic to check each link on the page to loop throug all possible trees until a max deep level
         items = []
         disqualify = None
         if not exclude_entries:
@@ -145,7 +146,8 @@ class DataRetrieval:
 
         for entry in entries:
             if not entry in exclude_entries:
-                if (ext_match and Path(entry).endswith(ext_match)) or (not ext_match):
+                # str_entry = str(entry)
+                if (ext_match and str(entry).endswith(tuple(ext_match))) or (not ext_match):
                     items.append(entry)
                     # print (entry)
         return items, disqualify
