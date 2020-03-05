@@ -25,36 +25,41 @@ class DataRetrieval:
     def get_data_by_folder_name(self, data_loc, search_deep_level, exclude_dirs):
         # retrieves data for each sub-aliquot listed in the inquiry file based on presence
         # of aliquot id key in the name of the folder
-        dirs = self.find_locations_by_folder(data_loc, search_deep_level, exclude_dirs)
-        return dirs
+        disqualify =None
+        dirs, disqualify = self.find_locations_by_folder(data_loc, search_deep_level, exclude_dirs)
+        return dirs, disqualify
 
     def get_data_by_file_name(self, data_loc, search_deep_level, exclude_dirs, ext_match):
-        # it retrieves all files potentially qualifying to be a source and searches through each to match
-        # the sub-aliquot name in the name of the file
+        # it retrieves all files potentially qualifying to be a source
+        disqualify =None
+        files = []
         if Path(data_loc).exists():
             files = self.get_file_system_items(data_loc, search_deep_level, exclude_dirs, 'file', ext_match)
         else:
             _str = 'Expected to exist directory "{}" is not present'.format(data_loc)
             _str2 = '- reported from "DataRetrieval" class, "get_data_by_file_name" function.'
             self.logger.warning(_str + _str2)
-            self.disqualify_source(data_loc, _str)
-            dirs_path = []
-        return files
+            disqualify = (data_loc, _str)
+            # self.disqualify_source(data_loc, _str)
+        return files, disqualify
 
     def find_locations_by_folder(self, loc_path, search_deep_level, exclude_dirs):
+        disqualify =None
         # get directories of the top level and filter out any directories to be excluded
-        dirs_top = self.get_top_level_dirs(loc_path, exclude_dirs)
+        dirs_top, disqualify = self.get_top_level_dirs(loc_path, exclude_dirs)
         dirs = []  # holds final list of directories
         dirs.extend(dirs_top)
 
         # if deeper than top level search is required, proceed here
         if search_deep_level > 0:
             for d in dirs_top:
-                dirs.extend(self.get_file_system_items(d, search_deep_level-1, exclude_dirs, 'dir'))
+                items = self.get_file_system_items(d, search_deep_level-1, exclude_dirs, 'dir')
+                dirs.extend(items)
 
-        return dirs
+        return dirs, disqualify
 
     def get_top_level_dirs(self, path, exclude_dirs=None):
+        disqualify =None
         if exclude_dirs is None:
             exclude_dirs = []
         if Path(path).exists():
@@ -70,9 +75,10 @@ class DataRetrieval:
             # self.logger.warning('Expected to exist directory "{}" is not present - reported from "DataRetrieval" '
             #                    'class, "get_top_level_dirs" function'.format (path))
             self.logger.warning(_str + _str2)
-            self.disqualify_source(path, _str)
+            dusqualify = (path, _str)
+            # self.disqualify_source(path, _str)
             dirs_path = []
-        return dirs_path
+        return dirs_path, dusqualify
 
     @staticmethod
     def get_file_system_items(dir_cur, search_deep_level, exclude_dirs=None, item_type='dir', ext_match=None):
@@ -107,6 +113,7 @@ class DataRetrieval:
 
     def get_web_data(self, url, str_xpath, exclude_entries=None, ext_match=None):
         items = []
+        disqualify = None
         if not exclude_entries:
             exclude_entries = []
         try:
@@ -117,8 +124,9 @@ class DataRetrieval:
             _str2 = ' at: "{}"\n{} '.format(url, traceback.format_exc())
             self.logger.critical(_str + _str2)
             # self.error.add_error(_str + _str2)
-            self.disqualify_source(url, _str)
-            return items
+            # self.disqualify_source(url, _str)
+            disqualify = (url, _str)
+            return items, disqualify
 
         content = html.fromstring(page.content)
 
@@ -130,16 +138,17 @@ class DataRetrieval:
                 .format(ex, str_xpath)
             _str2 = ' of URL "{}"\n{} '.format(url, traceback.format_exc())
             self.logger.critical(_str + _str2)
-            self.disqualify_source(url, _str)
+            # self.disqualify_source(url, _str)
+            disqualify = (url, _str)
             # self.error.add_error(_str + _str2)
-            return items
+            return items, disqualify
 
         for entry in entries:
             if not entry in exclude_entries:
                 if (ext_match and Path(entry).endswith(ext_match)) or (not ext_match):
                     items.append(entry)
                     # print (entry)
-        return items
+        return items, disqualify
 
-    def disqualify_source(self, source_path, reason):
-        pass
+    # def disqualify_source(self, source_path, reason):
+    #    pass

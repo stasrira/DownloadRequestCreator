@@ -23,6 +23,10 @@ Datasource:
                     - .fastq
         -
             path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq2
+        -
+            path: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\datasource_examples\minerva\bulk_assays\atacseq
+            search_method: # search_rawdata_summary
+                search_by: folder_name1
 
     search_method_default: # search_rawdata_summary
         search_by: file_name #possible options: file_name and folder_name

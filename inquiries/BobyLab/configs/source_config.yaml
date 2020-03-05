@@ -4,6 +4,7 @@ Datasource:
             path: https://QQQusers.hpc.mssm.edu/~wangy33/10X_Single_Cell_RNA/TD01119_DARPA/
             web_location: True
             xpath: "//li/a/@href"
+            report_error_on_disqualification: True
             search_method:
                 exclude_folders:
                     - 046_ATACseq_AS10-16739_2/

@@ -1,12 +1,5 @@
 from data_retrieval import DataRetrieval
-from pathlib import Path
 import os
-import tarfile
-import hashlib
-import subprocess
-import shlex
-import traceback
-from utils import global_const as gc
 
 
 class DataSource(DataRetrieval):
@@ -15,13 +8,14 @@ class DataSource(DataRetrieval):
         self.source_content_arr = []
         self.disqualified_data_sources = {}
         self.source_locations = None
-        # self.data_loc = None
-        # self.cnf_data_source = None
+        self.error_on_disqualification = False
+
         DataRetrieval.__init__(self, inquiry)
 
     def init_specific_settings(self):
         source_locations = self.conf_process_entity.get_value('Datasource/locations')
         self.source_locations = source_locations
+
         # default search_by parameters from source config file
         search_by_default = self.conf_process_entity.get_value('Datasource/search_method_default/search_by')
         search_deep_level_defalult = self.conf_process_entity.get_value(
@@ -52,6 +46,8 @@ class DataSource(DataRetrieval):
             aliquot_match = src_sm['aliquot_match'] \
                 if src_sm and 'aliquot_match' in src_sm.keys() else aliquot_match_default
 
+            error_on_disqualification = loc_item['report_error_on_disqualification'] \
+                if 'report_error_on_disqualification' in loc_item.keys() else False
             web_location = loc_item['web_location'] if 'web_location' in loc_item.keys() else None
             xpath = loc_item['xpath'] if 'xpath' in loc_item.keys() else '/' # default option - start with root element
             ds_path = loc_item['path']
@@ -85,25 +81,30 @@ class DataSource(DataRetrieval):
                                        target_subfolder,
                                        xpath))
 
-            # start processing a source
+            # start processing current source
             items = []
+            disqualify = None
             if search_by == 'folder_name':
                 if not web_location:
-                    items = self.get_data_by_folder_name(ds_path, search_deep_level, exclude_dirs)
+                    items, disqualify = self.get_data_by_folder_name(ds_path, search_deep_level, exclude_dirs)
                 else:
-                    items = self.get_web_data(ds_path, xpath, exclude_dirs)
+                    items, disqualify = self.get_web_data(ds_path, xpath, exclude_dirs)
             elif search_by == 'file_name':
                 if not web_location:
-                    items = self.get_data_by_file_name(ds_path, search_deep_level, exclude_dirs, ext_match)
+                    items, disqualify = self.get_data_by_file_name(ds_path, search_deep_level, exclude_dirs, ext_match)
                 else:
-                    items = self.get_web_data(ds_path, xpath, exclude_dirs, ext_match)
+                    items, disqualify = self.get_web_data(ds_path, xpath, exclude_dirs, ext_match)
             else:
                 _str = 'Unexpected "search_by" configuration parameter "{}" was provided.'.format(search_by)
                 _str2 = 'Skipping processing of the current source "{}"'.format(ds_path)
                 self.logger.warning('{} {}'.format(_str, _str2))
-                # self.error.add_error(_str)
-                # self.disqualified_data_sources[loc_item['path']] = _str
-                self.disqualify_source(loc_item['path'], _str)
+                # self.disqualify_source(loc_item['path'], _str, error_on_disqualification)
+                disqualify = (loc_item['path'], _str)
+                # continue
+
+            if disqualify:
+                # if disqualification was reported for current source location, disqualify it and skip to next location
+                self.disqualify_source(disqualify[0], disqualify[1], error_on_disqualification)
                 continue
 
             if items and len(items) > 0:
@@ -122,10 +123,16 @@ class DataSource(DataRetrieval):
                              'Total number of files/folder available in the source = {}.'
                              .format(ds_count, len(items) if items else 0))
 
-    def disqualify_source(self, source_path, reason):
+    def disqualify_source(self, source_path, reason, error_on_disqualification = None):
+        if error_on_disqualification is None:
+            error_on_disqualification = False
+
         if not source_path in self.disqualified_data_sources.keys():
             self.disqualified_data_sources[source_path] = []
         self.disqualified_data_sources[source_path].append(reason)
-        self.logger.warning('Data source "{}" was dusqualified with the following reason "{}".'
-                            .format(source_path, reason))
+        _str = 'Data source "{}" was disqualified with the following reason "{}".'.format(source_path, reason)
+        self.logger.warning(_str)
 
+        if error_on_disqualification:
+            # if source requires to report an error on disqualification
+            self.error.add_error(_str)

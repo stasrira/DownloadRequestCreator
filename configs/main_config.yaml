@@ -27,7 +27,7 @@ Email:
     smtp_server: smtp.mssm.edu
     smtp_server_port: 25
     default_from_email: stasrirak.ms@gmail.com
-    sent_to_emails: stasrirak.ms@gmail.com, stasrira@yahoo.com
+    send_to_emails: stasrirak.ms@gmail.com, stasrira@yahoo.com
     send_emails: True # expected values: True, False
 
 Execute:

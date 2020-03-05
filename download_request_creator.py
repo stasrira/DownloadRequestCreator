@@ -117,12 +117,13 @@ if __name__ == '__main__':
                             # no disqualified sub-aliquots present
                             fl_status = 'OK'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
-                            errors_present = 'OK'
+                            # errors_present = 'OK'  # this variable is set to OK by default, no update needed
                         else:
                             # some disqualified sub-aliquots are presetn
                             fl_status = 'OK_with_Disqualifications'
                             _str = 'Processing status: "{}". Download Inquiry: {}'.format(fl_status, inq_path)
-                            errors_present = 'DISQUALIFY'
+                            if not errors_present == 'ERROR':
+                                errors_present = 'DISQUALIFY'
                     else:
                         fl_status = 'ERROR'
                         _str = 'Processing status: "{}". Check processing log file for this inquiry: {}' \
@@ -141,7 +142,7 @@ if __name__ == '__main__':
                     # if Processed folder does not exist in the Inquiry source sub-folder, it will be created
                     os.makedirs(processed_dir, exist_ok=True)
 
-                    inq_processed_name = ts + '_' + fl_status + '_' + inq_file.replace(' ', '_').replace('__','_')
+                    inq_processed_name = ts + '_' + fl_status + '_' + str(inq_file).replace(' ', '_').replace('__','_')
                     # print('New file name: {}'.format(ts + '_' + fl_status + '_' + fl))
                     # move processed files to Processed folder
                     os.rename(inq_path, processed_dir / inq_processed_name)
@@ -219,7 +220,7 @@ if __name__ == '__main__':
                                .format(ex, inq_path, traceback.format_exc()))
                     raise
 
-        mlog.info('Number of successfully processed Submission inquiries = {}'.format(inq_proc_cnt))
+        mlog.info('Number of successfully processed Inquiries = {}'.format(inq_proc_cnt))
 
         # start Data Download request if proper config setting was provided
         dd_status = {'status': '', 'message': ''}
@@ -238,6 +239,9 @@ if __name__ == '__main__':
                 mlog.critical(_str)
                 dd_status = {'status': 'Error', 'message': _str}
 
+        mlog.info('Preparing to send notificatoin email.')
+
+        email_to = m_cfg.get_value('Email/send_to_emails')
         email_subject = 'processing of download inquiry. '
 
         if inq_proc_cnt > 0:
@@ -265,10 +269,12 @@ if __name__ == '__main__':
             # print ('email_subject = {}'.format(email_subject))
             # print('email_body = {}'.format(email_body))
 
+            mlog.info('Sending a status email with subject "{}" to "{}".'.format(email_subject, email_to))
+
             try:
                 if m_cfg.get_value('Email/send_emails'):
                     email.send_yagmail(
-                        emails_to=m_cfg.get_value('Email/sent_to_emails'),
+                        emails_to= email_to,
                         subject=email_subject,
                         message=email_body
                         # commented adding attachements, since some log files go over 25GB limit and fail email sending
@@ -281,6 +287,7 @@ if __name__ == '__main__':
                     .format(ex, inq_path, os.path.abspath(__file__), traceback.format_exc())
                 mlog.critical(_str)
 
+            mlog.info('End of processing of download inquiries in "{}".'.format(inquiries_path))
 
     except Exception as ex:
         # report unexpected error to log file
