@@ -2,11 +2,11 @@ Version: 1.00
 
 Location:
     # location of a directory with inquiries
-    inquiries: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\inquiries
-    # path to the folder where new inquiry files are located
-    output_requests: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\outcome_requests
+    inquiries: /ext_data/shared/.apps/download_request_creator/common/inquiries
+    # path to the folder where newly created download request files are located
+    output_requests: /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
     # path to the folder where application level log files are located (one per application run)
-    app_logs: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\logs
+    app_logs: /ext_data/shared/.apps/download_request_creator/common/app_logs
     # path to the folder where dynamically created inquiry files for disqualified aliquots will be saved
     inquiries_disqualified_path: reprocess
     # path to the folder where inquiry level log files are located (one log file per inquiry)
@@ -14,7 +14,8 @@ Location:
     # path to the folder where processed inquiry files will be stored
     inquiries_processed_relative_path: processed
     # path to Data Downloader tool. It will be executed by the app, if "Execute/run_data_downloader" is set to True
-    data_downloader_path: notepad.exe
+    # data_downloader_path: cd /ext_data/shared/.apps/data_downloader/release_v1.02; ./process_requests.sh -d -f /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
+    data_downloader_path: cd /ext_data/stas/mountsinai_utils/data_downloader; ./process_requests.sh -d -f /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
 
 Logging:
     #main log - log created by the main application
@@ -29,7 +30,7 @@ Email:
     smtp_server: smtp.mssm.edu
     smtp_server_port: 25
     default_from_email: stasrirak.ms@gmail.com
-    send_to_emails: stasrirak.ms@gmail.com, stasrira@yahoo.com
+    send_to_emails: stasrirak.ms@gmail.com
     send_emails: True # expected values: True, False
 
 Execute:

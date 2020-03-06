@@ -247,7 +247,7 @@ class Inquiry(File):
             # print(inq_line)
             # concatenate study_id for the current inquiry line using conversion of the field values
             # set in the dict_config.yaml
-            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(str(i+1), 'inquiry_file_structure'))
+            inq_study_path = '/'.join([cm2.get_dict_value(str(inq_line[i]).lower(), cm2.get_dict_value(str(i+1), 'inquiry_file_structure'))
                                        for i in range(4)])
             # print (inq_study_path)
             assay = inq_line[3]  # identify assay for the current inquiry line

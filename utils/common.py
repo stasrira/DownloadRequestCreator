@@ -37,7 +37,7 @@ def identify_delimeter_by_file_extension(file_path):
 
 def start_external_process_async (exec_path):
     from subprocess import Popen
-    process = Popen(exec_path)
+    process = Popen(exec_path, shell=True)
     return process
 
 def check_external_process(process):
