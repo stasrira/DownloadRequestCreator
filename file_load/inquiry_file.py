@@ -247,7 +247,7 @@ class Inquiry(File):
             # print(inq_line)
             # concatenate study_id for the current inquiry line using conversion of the field values
             # set in the dict_config.yaml
-            inq_study_path = '/'.join([cm2.get_dict_value(inq_line[i], cm2.get_dict_value(str(i+1), 'inquiry_file_structure'))
+            inq_study_path = '/'.join([cm2.get_dict_value(str(inq_line[i]).lower(), cm2.get_dict_value(str(i+1), 'inquiry_file_structure'))
                                        for i in range(4)])
             # print (inq_study_path)
             assay = inq_line[3]  # identify assay for the current inquiry line
@@ -281,7 +281,10 @@ class Inquiry(File):
                         'sub-aliquot': sub_al,
                         'study': inq_study_path,
                         'source': src_item,
-                        'match_details': match_details
+                        'match_details': match_details,
+                        'obj_type': ('dir' if src_item['search_by'] == 'folder_name'
+                                        else 'file' if src_item['search_by'] == 'file_name'
+                                        else 'unknown')
                     }
                     self.inq_match_arr.append(item_details)
 
@@ -367,7 +370,7 @@ class Inquiry(File):
 
         with open(rf_path, "w") as rf:
             # write headers to the file
-            headers = '\t'.join(['Source', 'Destination', 'Aliquot_id'])
+            headers = '\t'.join(['Source', 'Destination', 'Aliquot_id', 'Obj_Type'])
             rf.write(headers + '\n')
 
             for item in self.inq_match_arr:
@@ -378,6 +381,7 @@ class Inquiry(File):
                 study_path = item['study']
                 target_subfolder = item['source']['target_subfolder']
                 sub_aliquot = item['sub-aliquot']
+                obj_type = item['obj_type']
 
                 # check if current sub-aliquot is not part of disqualified items array
                 if self.disqualified_items and sub_aliquot in self.disqualified_items.keys():
@@ -391,7 +395,8 @@ class Inquiry(File):
                 dest_path = dest_path.replace('{study_path}', study_path)
                 dest_path = dest_path.replace('{target_subfolder}', target_subfolder)
 
-                line = '\t'.join([str(src_path), str(Path(dest_path)), str(sub_aliquot)])
+
+                line = '\t'.join([str(src_path), str(Path(dest_path)), str(sub_aliquot), str(obj_type)])
                 rf.write(line +'\n')
 
         self.logger.info("Finish preparing download_request file '{}'.".format(rf_path))

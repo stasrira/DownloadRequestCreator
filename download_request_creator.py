@@ -197,10 +197,11 @@ if __name__ == '__main__':
                                                 ])
                                                             if inq_obj.inq_match_arr else 'None',
                                    '<br>'.join(['&nbsp;'*nbsp + val +
-                                                ' - <font color="red">status: {}</font>'
-                                               .format(inq_obj.disqualified_items[val]['status'])
-                                                for val in inq_obj.disqualified_items.keys()])
-                                                            if inq_obj.disqualified_items else 'None',
+                                        ' - <font color="red">status: {}</font> Here is the inquiry entry for it: {}'
+                                        .format(inq_obj.disqualified_items[val]['status'],
+                                                inq_obj.disqualified_items[val]['inquiry_item'])
+                                        for val in inq_obj.disqualified_items.keys()])
+                                                        if inq_obj.disqualified_items else 'None',
                                    '&nbsp;'*nbsp + str(inq_obj.disqualified_inquiry_path)
                                                             if inq_obj.disqualified_items else 'N/A'
                                    )
@@ -260,6 +261,7 @@ if __name__ == '__main__':
             email_body = ('Number of inquiries processed: {}.'.format(inq_proc_cnt)
                           + '<br/>Run Data Downloader setting was set to "{}"'.format(run_data_download)
                           + ('<br/>Data Downloader location: {}'.format(gc.DATA_DOWNLOADER_PATH) if run_data_download else '')
+                            # TODO: change color of the status in the next line depending on the value
                           + ('<br/>Status of starting Data Downloader: {}'.format(dd_status['status']) if run_data_download else '')
                           + '<br/><br/>Processed Inquiry\'s details:'
                           + '<br/><br/>'

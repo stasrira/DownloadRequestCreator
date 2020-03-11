@@ -3,7 +3,7 @@ Version: 1.00
 Location:
     # location of a directory with inquiries
     inquiries: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\inquiries
-    # path to the folder where new inquiry files are located
+    # path to the folder where newly created download request files are located
     output_requests: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\outcome_requests
     # path to the folder where application level log files are located (one per application run)
     app_logs: D:\MounSinai\Darpa\Programming\DownloadRequestCreator\logs
