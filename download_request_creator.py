@@ -260,6 +260,7 @@ if __name__ == '__main__':
             email_body = ('Number of inquiries processed: {}.'.format(inq_proc_cnt)
                           + '<br/>Run Data Downloader setting was set to "{}"'.format(run_data_download)
                           + ('<br/>Data Downloader location: {}'.format(gc.DATA_DOWNLOADER_PATH) if run_data_download else '')
+                            # TODO: change color of the status in the next line depending on the value
                           + ('<br/>Status of starting Data Downloader: {}'.format(dd_status['status']) if run_data_download else '')
                           + '<br/><br/>Processed Inquiry\'s details:'
                           + '<br/><br/>'

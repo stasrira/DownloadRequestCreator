@@ -4,7 +4,7 @@ Location:
     # location of a directory with inquiries
     inquiries: /ext_data/shared/.apps/download_request_creator/common/inquiries
     # path to the folder where newly created download request files are located
-    output_requests: /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
+    output_requests: /ext_data/shared/.apps/data_downloader/data_transfer_requests/auto_posted # /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
     # path to the folder where application level log files are located (one per application run)
     app_logs: /ext_data/shared/.apps/download_request_creator/common/app_logs
     # path to the folder where dynamically created inquiry files for disqualified aliquots will be saved
@@ -14,8 +14,8 @@ Location:
     # path to the folder where processed inquiry files will be stored
     inquiries_processed_relative_path: processed
     # path to Data Downloader tool. It will be executed by the app, if "Execute/run_data_downloader" is set to True
-    # data_downloader_path: cd /ext_data/shared/.apps/data_downloader/release_v1.02; ./process_requests.sh -d -f /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
-    data_downloader_path: cd /ext_data/stas/mountsinai_utils/data_downloader; ./process_requests.sh -d -f /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
+    # data_downloader_path: cd /ext_data/stas/mountsinai_utils/data_downloader; ./process_requests.sh -d -f /ext_data/shared/.apps/download_request_creator/common/output_dld_requests
+    data_downloader_path: /ext_data/shared/.apps/data_downloader/release_v1.03/process_requests.sh -d -f /ext_data/shared/.apps/data_downloader/data_transfer_requests/auto_posted
 
 Logging:
     #main log - log created by the main application

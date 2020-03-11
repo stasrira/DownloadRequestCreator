@@ -113,7 +113,8 @@ class DataSource(DataRetrieval):
                                     'name': os.path.basename(item) if not web_location else item,
                                     'target_subfolder': target_subfolder,
                                     'soft_comparisions': soft_comparisions,
-                                    'aliquot_match': aliquot_match}
+                                    'aliquot_match': aliquot_match,
+                                    'search_by': search_by}
                     self.source_content_arr.append(item_details)
             else:
                 self.logger.warning('No available files/folders were found in the current source. '
