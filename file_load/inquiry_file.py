@@ -135,7 +135,7 @@ class Inquiry(File):
                 # populate lineList value as required for the base class
                 self.lineList = []
                 for ln in lines:
-                    self.lineList.append(','.join(ln))
+                    self.lineList.append(','.join(str(ln)))
 
                 wb.unload_sheet(sheet.name)
 
