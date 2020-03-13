@@ -36,7 +36,7 @@ Email:
 Execute:
     # if set to true, data downloader file (Location/data_downloader_path) will be executed upon completion
     # of processing inquiries
-    run_data_downloader: True
+    run_data_downloader: False
 
 Validate:
     # if set to True, provided inquiry values will be validated against corresponded entries in the dict_config.yaml
