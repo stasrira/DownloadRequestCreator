@@ -27,14 +27,48 @@ assay_sub_aliquot_postfix:
 exposure:
     hiv: HIV
     mrsa: MRSA
-    hlth: HLTH
+    mssa: MSSA
+    tnt: TNT
+    rad: RAD
+    tbi: TBI
+    rdx: RDX
+    petn: PETN
+    tde: TDE
+    denv: DENV
+    bsl: BSL
     anth: ANTH
+    mal: MAL
+    oph: OPH
+    gamma: GAMMA
+    co60: CO60
+    xray: XRAY
+    cs137: CS137
+    lasv: LASV
+    mpfl: MPFL
+    mpdc: MPDC
+    empta: EMPTA
+    2dc: 2DC
+    zika: ZIKA
+    wnile: WNILE
+    sarin: SARIN
+    vx: VX
+    soman: SOMAN
+    hd: HD
+    fent: FENT
+    ebola: EBOLA
 
 center:
     hi: HI
     du: DU
     pfm: PfM
     ba: BA
+    as: AS
+    is: IS
+    sa: SA
+    cu: CU
+    na: NA
+    gs: GS
+    wvu: WVU
 
 specimen_prep:
     pbmc: PBMC
