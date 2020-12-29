@@ -56,6 +56,7 @@ exposure:
     hd: HD
     fent: FENT
     ebola: EBOLA
+    hlth: HLTH
 
 center:
     hi: HI
@@ -69,6 +70,7 @@ center:
     na: NA
     gs: GS
     wvu: WVU
+    wr: WR
 
 specimen_prep:
     pbmc: PBMC
