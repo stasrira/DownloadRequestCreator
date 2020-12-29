@@ -23,7 +23,7 @@ Logging:
 
     #defines log levels to be used for "main" and "file" logs. Usual values are INFO and DEBUG
     main_log_level: INFO
-    inquiry_log_level: INFO
+    inquiry_log_level: INFO #DEBUG
 
 Email:
     #default settings for sending emails

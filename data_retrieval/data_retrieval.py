@@ -75,10 +75,10 @@ class DataRetrieval:
             # self.logger.warning('Expected to exist directory "{}" is not present - reported from "DataRetrieval" '
             #                    'class, "get_top_level_dirs" function'.format (path))
             self.logger.warning(_str + _str2)
-            dusqualify = (path, _str)
+            disqualify = (path, _str)
             # self.disqualify_source(path, _str)
             dirs_path = []
-        return dirs_path, dusqualify
+        return dirs_path, disqualify
 
     @staticmethod
     def get_file_system_items(dir_cur, search_deep_level, exclude_dirs=None, item_type='dir', ext_match=None):

@@ -205,7 +205,7 @@ class Inquiry(File):
         # m_logger = logging.getLogger(m_logger_name)
 
         logger_name = gc.INQUIRY_LOG_NAME
-        logging_level = self.conf_main.get_value('Logging/request_log_level')
+        logging_level = self.conf_main.get_value('Logging/inquiry_log_level')
 
         # if a relative path provided, convert it to the absolute address based on the application working dir
         if not os.path.isabs(log_folder_name):
@@ -301,16 +301,21 @@ class Inquiry(File):
             entity = 'aliquot'
 
         soft_match = False
+        self.logger.debug ("srch_item = {}| srch_in_str = {}".format(srch_item, srch_in_str))
         if srch_item in srch_in_str:
             out = True
+            self.logger.debug("Exact match found between: {} | {}".format(srch_item, srch_in_str))
         else:
             if soft_match_arr:
+                self.logger.debug("Starting soft match for: {} | {}".format(srch_item, srch_in_str))
                 for item in soft_match_arr:
                     srch_in_str = srch_in_str.replace(item['find'], item['replace'])
                     srch_item = srch_item.replace(item['find'], item['replace'])
+                self.logger.debug("Updated for soft match: srch_item = {}| srch_in_str = {}".format(srch_item, srch_in_str))
                 if srch_item in srch_in_str:
                     out = True
                     soft_match = True
+                    self.logger.debug("Soft match found between: {} | {}".format(srch_item, srch_in_str))
         # prepare log entry
         if out:
             _str = str('Loose' if soft_match else 'Exact') + \
