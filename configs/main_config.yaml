@@ -21,8 +21,8 @@ Logging:
     #inquiry log - log created for each processed inquiry
 
     #defines log levels to be used for "main" and "file" logs. Usual values are INFO and DEBUG
-    main_log_level: INFO
-    inquiry_log_level: INFO
+    main_log_level: DEBUG #INFO
+    inquiry_log_level: DEBUG #INFO
 
 Email:
     #default settings for sending emails
